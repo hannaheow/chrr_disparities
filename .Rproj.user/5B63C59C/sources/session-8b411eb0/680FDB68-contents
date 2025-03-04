@@ -1,0 +1,35 @@
+---
+title: "first pass and notes"
+format: html
+editor: visual
+---
+
+-   
+
+-   Clarify the research question
+
+    -   What are census tract disparities capturing?
+
+    -   What has been done to capture disparities using CT level data previously? 
+
+    -   If we measure disparity at the CT level, how much disparity in other domains are we capturing? 
+
+    -   For now, we are not interested in incorporation of disparity into ranks / clusters; that is a separate research question. 
+
+-   Analyze data: P:\\CH-Ranking\\Research\\Disparity Measurement\\Census Tract Disparity Measurement
+
+    -   Initial thoughts:
+
+        -   regression with CT level disparity as a covariate to "adjust" a relationship between a well-established health factor and a health outcome (or cluster) 
+
+            -   This will tell us how much of the relationship between income (for example) and health can be explained by CT disparities ; could do the same with edu and/or race (though race is not ideal because we would probably have to pick just one) 
+
+        -   Regression with CT level disparity as an outcome with income and race as predictors 
+
+            -   This will tell us how much of the 
+
+    -   Decomposition - find more info in the cancer disparities paper 
+
+        -   Can we decompose CT disparities into race and income components ? 
+
+-   Run analyses by Ron? Paul? Amy? 
