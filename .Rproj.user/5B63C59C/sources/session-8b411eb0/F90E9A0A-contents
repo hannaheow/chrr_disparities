@@ -1,0 +1,28 @@
+---
+title: "first calcs"
+format: html
+editor: visual
+---
+
+```{r load data}
+income = read.csv("P:/CH-Ranking/Research/Disparity Measurement/Census Tract Disparity Measurement/Duplication_GL/v153_disparity_income_GL.csv")
+
+
+race = read.csv("P:/CH-Ranking/Research/Disparity Measurement/Census Tract Disparity Measurement/Duplication_GL/v153_disparity_race_GL.csv")
+
+tract = read.csv("P:/CH-Ranking/Research/Disparity Measurement/Census Tract Disparity Measurement/Duplication_GL/v153_disparity_tract_GL.csv")
+
+#mean_wt and mean_th_wt are equivalent 
+#num_hh and num_hh_theil_counted are equivalent 
+
+```
+
+Theils index is decomposable: sum of between group disparity (sum(inds pop share and weighted avg of within group disparity
+
+For individual-level data, total disparity in mortality (let's say) measured by Theil’s index can be written as T = N Σi = 1 Σ ln (ri ) pi sj ri 1n pj sj ( \[19\] where pi is an individual’s population share (which in the case of individual data will be 1/n, so that pi = 1) and ri is the ratio of the individual’s age of mortality to the population average age of mortality (i.e., ri = yi / Y ( ). (in this case let's assume that the total population is a single county)
+
+When the population of individuals is arranged into J groups (say census tracts), Theil showed that equation \[19\] is the exact sum of two parts: between-census tract disparity and a weighted average of within-census tract disparity: T = J Σj = 1 ln (rj ) + pj rj J Σj = 1 pj rj Tj \[20\] where Tj is the disparity in BMI within group j. The within-group component (the second term on the right side of equation \[20\] is weighted by, in this case, group j’s share of the total (county-level) age at mortality, pj x rj = sj because (where sj is the share of total BMI) when the denominator for rj is the mean age at mortality for the total (county) population. More importantly, the above decomposition also makes it clear that it is possible to calculate between-census tract disparity in mortality age—the primary quantity of interest with respect to social disparities in health—in the absence of data on each individual.
+
+BIG TAKE AWAY: "Although this measure has attractive qualities, the betweengroup/within-group decomposition requires continuous outcome data measurable in individuals"
+
+BUT we could possibly consider CTs as "individuals", counties as groups, and states as "total"

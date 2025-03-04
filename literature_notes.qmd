@@ -1,0 +1,199 @@
+---
+title: "reading notes"
+format: html
+editor: visual
+---
+
+## Mapping and Measuring Social Disparities in Premature Mortality: The Impact of Census Tract Poverty within and across Boston Neighborhoods, 1999–2001 Jarvis T Chen 1,✉, David H Rehkopf 1, Pamela D Waterman 1, S V Subramanian 1, Brent A Coull 2, Bruce Cohen 3, Mary Ostrem 4, Nancy Krieger 1
+
+<https://pubmed.ncbi.nlm.nih.gov/17001522/>
+
+FROM HENI CENSUS TRACT DISPARITY LITERATURE 
+
+multilevel modeling framework ; premature mort rates are sig higher in more impoverished areas
+
+lots of within neighborhood variation in premature mort; decreased after adjusting for CT poverty 
+
+"populatoin attributable fraction analysis" shows that in some of Boston's poorest neighborhoods, 25-30% of premature deaths were assoc w CT poverty 
+
+mort data from mass dept of public health ; then deaths were geocoded w 97% successful matches at the CT level 
+
+premature mort : death before age 75 
+
+neighborhoods were defined by the boston public health commission - a total of 16 neighborhoods were included in the study 
+
+categorized CT poverty into 4 levels 
+
+multilevel analysis: age groups nested within CTs within neighborhoods 
+
+used \~ten year age groups - total of 9 groups 
+
+models: poisson mixed effects models 
+
+m1: age and spatial random effects 
+
+m2: age, spatial random effects, CT poverty
+
+incidence rate ration (IRR) was estimated for each CT relative to the lowest poverty category (SO THE BOTTOM IS REFERENCE IN THIS CASE???) 
+
+contribution of CT and neighborhood var was estimated using random effects variance components 
+
+bayesian 
+
+I DONT UNDERSTAND THIS PART
+
+models were fit w bayesian inference w markov chain monte carlo (MCMC) estimation 
+
+winbugs package w 70k iterations, 10k burnin and thinning by 30 
+
+model fit assessed using deviance informatoin criterion (DIC) 
+
+standardized mortality ratios (SMR) were mapped at CT and neighborhood levels showing premature mort rates relative to boston average (IN THIS CASE THE TOTAL AVERAGE WAS THE REFERENCE???) 
+
+model based direct std rates were calcd to adjust for age dist allowing comparisons w external mort rates 
+
+population attributable fraction (PAF) was estimated to determine the prop of premature deaths linked to living in high poverty CTs 
+
+bayesian modeling: 
+
+used to stabilize small area estimates 
+
+allows for spatial smoothing - can incorporate random effects at both the CT and neighborhood levels 
+
+bayesian credible intervals provide direct probabilistic statements about parameter estimates ; esp useful for estimating incidence rate ratios (IRRs) and mortality risk differences across CTs 
+
+## Sociodemographic disparities in e-cigarette retail environment: Vape stores and census tract characteristics in Orange County, CA
+
+<https://doi.org/10.1016/j.healthplace.2017.12.004>
+
+Georgiana Bostean, Luis Sanchez, Adam M. Lippert
+
+vape stores within a single county 
+
+23.4% of CTs had at least 1 vape store; more prevalent in areas w higher percentage of hisp residents, lower pop density, and more tobacco retailer density 
+
+when controlling for tobacco retailer density, poverty was no longer a significant factor 
+
+clustering of nicotine related buisness 
+
+vape stores may be targeting or disprop appearing in communities w ses vulnerabilities 
+
+vape store location - compiled thru systematic internet search 
+
+total of 173 vape stores identified and geocoded 
+
+ground truthing for a subset of 36 stores to verify accuracy 
+
+tobacco retailer locations - obtained from CA state board of equalization 
+
+SES and land use data from the ACS 5 year est : race/eth, nativity, edu, poverty, age dist 
+
+land use: orange county public works; used to estimate the percent of commercial land use in each CT 
+
+"zero-inflated poisson regression" models to analyze the relationship between vape store counts and neighborhood chars (must be bc most cts don't actually have vape stores) - also called a ZIP model :) 
+
+predicted outcome: count of vape stores in CTs where at least one store exists 
+
+relationship between vape store count and SES 
+
+higher vape store incidence rates in CTs w higher hisp pop, greater tobacco retailer density, lower pop density ; commercial land use sig decreased prob of a tract having no vape stores 
+
+## Association of Census Tract-Level Socioeconomic Status with Disparities in Prostate Cancer–Specific Survival Vincent L. Freeman1,2,5, Ana C. Ricardo3 , Richard T. Campbell1 , Richard E. Barrett2,4, and Richard B. Warnecke2  <https://doi.org/10.1158/1055-9965.epi-11-0344>
+
+From Heni's folder 
+
+Association of Census Tract-Level Socioeconomic Status with Disparities in Prostate Cancer–Specific Survival Vincent L. Freeman1,2,5, Ana C. Ricardo3 , Richard T. Campbell1 , Richard E. Barrett2,4, and Richard B. Warnecke2\
+\
+<https://doi.org/10.1158/1055-9965.epi-11-0344>
+
+is CT SES associated w survival of prostate cancer?? 
+
+retrospective cohort of Black and White men in 4 chicago area medical centers 
+
+concentrated disadvantage (CD) As a multidim SES indicator ; calcd from 1990 census data 
+
+survival analysis using cox proportional hazards models, adj for demographics, tumor chars, treatment, health care system 
+
+higher disadvantage -\> lower prob of survival 
+
+racial disparities disappeared after adjusting for SES (THIS IS USEFUL!!!) 
+
+the effect of SES on survival was sig in private sector patients but not in the VA system - equal access health care system (VA) might mitigate the impact of SES on survival 
+
+Concentrated disadvantage CD = percent in poverty + percent unemployeed + percent female headed households + 100 - percent college grads 
+
+excluded racial composition from original formula to avoid collinearity 
+
+CD is useful because it is not analogous to individual SES (such as income or edu) but instead reflects broader neighborhood level economic and social conditions (kinda like our cluster value....) 
+
+CD is predictive of health outcomes, including self rated heatlh and asthma 
+
+is CT SES associated w survival of prostate cancer?? 
+
+retrospective cohort of Black and White men in 4 chicago area medical centers 
+
+concentrated disadvantage (CD) As a multidim SES indicator ; calcd from 1990 census data 
+
+survival analysis using cox proportional hazards models, adj for demographics, tumor chars, treatment, health care system 
+
+higher disadvantage -\> lower prob of survival 
+
+racial disparities disappeared after adjusting for SES (THIS IS USEFUL!!!) 
+
+the effect of SES on survival was sig in private sector patients but not in the VA system - equal access health care system (VA) might mitigate the impact of SES on survival 
+
+Concentrated disadvantage CD = percent in poverty + percent unemployeed + percent female headed households + 100 - percent college grads 
+
+excluded racial composition from original formula to avoid collinearity 
+
+CD is useful because it is not analogous to individual SES (such as income or edu) but instead reflects broader neighborhood level economic and social conditions (kinda like our cluster value....) 
+
+CD is predictive of health outcomes, including self rated heatlh and asthma 
+
+##  Census Tract Poverty and Racial Disparities in HIV Rates in Milwaukee County, Wisconsin, 2009–2014
+
+From Heni's folder
+
+Crystal Gibson1,2  · Katarina Grande3
+
+ · Casey Schumann3
+
+ · Mari Gasiorowicz
+
+<https://link.springer.com/article/10.1007/s10461-018-2064-y>\
+\
+census tract poverty levels and HIV rates 
+
+unadj HIV rates are assoc w poverty 
+
+after adjusting for percent black, percent male, percent unmarried, percent unemployment, percent vacant housing, the relationship between HIV and poverty was less clear 
+
+initially examined crude (unadj) HIV rates, then adjusted them for sociodemographic factors
+
+examined all 298 CTs in milwaukee county ; focused on CT level analyses 
+
+poisson regression: dependent var was HIV cases; used log of populatoin as an offset in all models 
+
+separate models for black, white, all pop 
+
+black individuals have higher HIV rates across all poverty levels 
+
+low number of HIV diagnoses
+
+focused on Milwaukee county 
+
+## Characterizing Within-County Health Disparity Using Multidimensional Disparity Indices from the PLACES Dataset: An Exploratory Analysis in New York
+
+Hyojun Park, Ph.D. (HP) Department of Sociology and Anthropology, Utah State University, Logan, Utah ([hyojun.park\@usu.edu](mailto:hyojun.park@usu.edu))
+
+Keith P. Gennuso, Ph.D. (KPG) University of Wisconsin Population Health Institute, Madison, Wisconsin ([keith.gennuso\@chrr.wisc.edu](mailto:keith.gennuso@chrr.wisc.edu))
+
+Elizabeth A. Pollock, Ph.D. (EAP) University of Wisconsin Population Health Institute, Madison, Wisconsin ([elizabeth.blomberg\@chrr.wisc.edu](mailto:elizabeth.blomberg@chrr.wisc.edu))
+
+NOT YET PUBLISHED ; FROM EMAIL FROM KEITH
+
+two methods:
+
+weighted model - captures disparity between tracts ONLY ; cannot account for within tract differences; effectively a point estimate of health weighted by population size ; no margins of error
+
+simulated model: incorporates point estimate and margin of error for each measure; within CTs estimates are roughly drawn from normal dist until a "simulated" population the same size of the original CT is met ; therefore we can

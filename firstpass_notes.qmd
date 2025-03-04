@@ -4,8 +4,6 @@ format: html
 editor: visual
 ---
 
--   
-
 -   Clarify the research question
 
     -   What are census tract disparities capturing?
