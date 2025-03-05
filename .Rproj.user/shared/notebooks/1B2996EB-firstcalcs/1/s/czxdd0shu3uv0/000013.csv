@@ -1,0 +1,9 @@
+"0","tract = tract %>% rename(sd_bgv_wt_tract = sd_bgv_wt)
+"
+"1","[1m[33mError[39m in `rename()`:[22m
+[33m![39m Can't rename columns that don't exist.
+[31m✖[39m Column `sd_bgv_wt` doesn't exist.
+Backtrace:
+[90m 1. [39mtract %>% rename(sd_bgv_wt_tract = sd_bgv_wt)
+[90m 3. [39m[1m[94mdplyr:::rename.data.frame([39m[22m., sd_bgv_wt_tract = sd_bgv_wt[1m[94m)[39m[22m
+"

@@ -1,5 +1,0 @@
-"0","income = read.csv(""P:/CH-Ranking/Research/Disparity Measurement/Census Tract Disparity/Duplication_GL/v153_disparity_income_GL.csv"")
-"
-"2","Warning: cannot open file 'P:/CH-Ranking/Research/Disparity Measurement/Census Tract Disparity/Duplication_GL/v153_disparity_income_GL.csv': No such file or directory"
-"2","Error in file(file, ""rt"") : cannot open the connection
-"

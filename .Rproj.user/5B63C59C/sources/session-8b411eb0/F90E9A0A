@@ -3,7 +3,7 @@
     "path": "~/chrr_disparities/firstcalcs.qmd",
     "project_path": "firstcalcs.qmd",
     "type": "quarto_markdown",
-    "hash": "595465826",
+    "hash": "2828332423",
     "contents": "",
     "dirty": false,
     "created": 1741130079978.0,
@@ -17,16 +17,16 @@
         "Source": "Source",
         "docOutlineVisible": "1",
         "rmdVisualCollapsedChunks": "",
-        "cursorPosition": "6,0",
+        "cursorPosition": "0,0",
         "scrollLine": "0",
-        "rmdVisualModeLocation": "2387:842"
+        "rmdVisualModeLocation": "39:0"
     },
     "folds": "",
-    "lastKnownWriteTime": 1741132720,
+    "lastKnownWriteTime": 1741206748,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1741132720668,
+    "last_content_update": 1741206748058,
     "read_only": false,
     "read_only_alternatives": []
 }

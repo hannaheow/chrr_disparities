@@ -3,7 +3,7 @@
     "path": "~/chrr_disparities/literature_notes.qmd",
     "project_path": "literature_notes.qmd",
     "type": "quarto_markdown",
-    "hash": "2187435413",
+    "hash": "2877177100",
     "contents": "",
     "dirty": false,
     "created": 1741128723331.0,
@@ -17,16 +17,16 @@
         "Source": "Source",
         "docOutlineVisible": "1",
         "rmdVisualCollapsedChunks": "",
-        "cursorPosition": "184,0",
+        "cursorPosition": "0,0",
         "scrollLine": "0",
-        "rmdVisualModeLocation": "9099:5938"
+        "rmdVisualModeLocation": "41:0"
     },
     "folds": "",
-    "lastKnownWriteTime": 1741130048,
+    "lastKnownWriteTime": 1741206739,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1741130048152,
+    "last_content_update": 1741206740005,
     "read_only": false,
     "read_only_alternatives": []
 }

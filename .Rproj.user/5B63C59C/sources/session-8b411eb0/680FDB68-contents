@@ -1,8 +1,24 @@
 ---
-title: "first pass and notes"
-format: html
+title: "notes"
+format: docx
 editor: visual
 ---
+
+## March 5, 2025 
+
+-   how does Jun summarize his comparisons and his findings from various models/methods in the simulation paper? are there other papers of Jun's that are relevant / might spark ideas?
+
+-   Should we assess income disparities instead since they are the largest? but are census tract disparities an appropriate proxy since they are more readily available? more clearly defined?
+
+-   Work towards abstract deadline for APHA March 27
+
+-   put results on p drive
+
+-   clarify partial corr discordance with multiple regression - this will inform next steps
+
+-   decomposition of thiels index - not useful yet...
+
+## Feb 2, 2025 
 
 -   Clarify the research question
 
@@ -24,7 +40,7 @@ editor: visual
 
         -   Regression with CT level disparity as an outcome with income and race as predictors 
 
-            -   This will tell us how much of the 
+            -   This will tell us if income or race disparities is a stronger predictor of census tract disparities  
 
     -   Decomposition - find more info in the cancer disparities paper 
 
