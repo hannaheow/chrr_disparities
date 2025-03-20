@@ -33,7 +33,7 @@ BUT we could possibly consider CTs/race groups/income groups as "individuals", c
 
 which means that we could compare the between county/ within county decomposition across income, race, and tracts.
 
-## Multiple regression analysis 
+## Multiple regression analysis
 
 dependent var: CT BGV
 
@@ -82,6 +82,36 @@ The results of the partial correlation analysis reveal the strength of the relat
 
 NEED TO CHECK THIS; CONFUSED WHY MODEL COEFFS AND PCOR RESULTS ARE DISCORDANT
 
-## ABSTRACT draft 
+## ABSTRACT draft
 
 We examine patterns in county-level disparities in homeownership, as measured by between-group variance, with the goal of understanding what **census tract-level disparities** are actually capturing—whether they are primarily reflecting **race differences**, **income differences**, or a combination of both. We compare **income-based disparities** (defined using 22 income groups), **race/ethnicity-based disparities** (defined using 8 different racial/ethnic identity groups), and **geographical disparities** (defined using census tracts). Using multiple regression and partial correlation analysis, the results show that **race disparities** are more strongly associated with census-tract level disparities than **income disparities**. Specifically, the partial correlation between race disparities and census-tract disparities is moderate (0.299), while the relationship with income disparities is weak (0.052). Both relationships are statistically significant, but the stronger influence of race highlights the importance of considering racial factors in understanding geographical disparities in homeownership. These findings suggest that **race** may play a more prominent role than income in shaping disparities in homeownership at the county level.
+
+```{r}
+# Load necessary libraries
+library(lme4)  # For mixed-effects models
+library(dplyr) # For data manipulation
+
+
+
+# Fit a two-level linear mixed-effects model
+# The response variable is 'fv_servings', with individual-level predictors
+# and tract-level predictors, and a random intercept for each tract.
+
+model <- lmer(fv_servings ~ race_ethnicity + nativity + duration_in_us + 
+               language_acculturation + emotional_support + instrumental_support + 
+               socioeconomic_position + 
+               tract_immigrant_composition + tract_racial_composition + 
+               tract_socioeconomic_composition + 
+               (1 | tract_id), data = data)
+
+# Summary of the model to assess fixed and random effects
+summary(model)
+
+# You can extract the coefficients (fixed effects) and random effects if needed
+fixef(model)  # Fixed effects
+ranef(model)  # Random effects (tract-level variation)
+
+# For model diagnostics, you can also check residuals
+residuals(model)  # Check model residuals
+
+```

@@ -98,7 +98,7 @@ relationship between vape store count and SES 
 
 higher vape store incidence rates in CTs w higher hisp pop, greater tobacco retailer density, lower pop density ; commercial land use sig decreased prob of a tract having no vape stores 
 
-## Association of Census Tract-Level Socioeconomic Status with Disparities in Prostate Cancer–Specific Survival Vincent L. Freeman1,2,5, Ana C. Ricardo3 , Richard T. Campbell1 , Richard E. Barrett2,4, and Richard B. Warnecke2  <https://doi.org/10.1158/1055-9965.epi-11-0344>
+## Association of Census Tract-Level Socioeconomic Status with Disparities in Prostate Cancer–Specific Survival Vincent L. Freeman1,2,5, Ana C. Ricardo3 , Richard T. Campbell1 , Richard E. Barrett2,4, and Richard B. Warnecke2 <https://doi.org/10.1158/1055-9965.epi-11-0344>
 
 From Heni's folder 
 
@@ -150,7 +150,7 @@ CD is useful because it is not analogous to individual SES (such as income or ed
 
 CD is predictive of health outcomes, including self rated heatlh and asthma 
 
-##  Census Tract Poverty and Racial Disparities in HIV Rates in Milwaukee County, Wisconsin, 2009–2014
+## Census Tract Poverty and Racial Disparities in HIV Rates in Milwaukee County, Wisconsin, 2009–2014
 
 From Heni's folder
 
@@ -197,3 +197,53 @@ two methods:
 weighted model - captures disparity between tracts ONLY ; cannot account for within tract differences; effectively a point estimate of health weighted by population size ; no margins of error
 
 simulated model: incorporates point estimate and margin of error for each measure; within CTs estimates are roughly drawn from normal dist until a "simulated" population the same size of the original CT is met ; therefore we can
+
+comparisons between models and between disparity metric are mostly descriptive
+
+## Individual and Neighborhood Differences in Diet Among Low-Income Foreign and U.S.-Born Women
+
+Tamara Dubowitz ScD ^a^ ^1^, S.V. Subramanian PhD ^b^ ^2^, Dolores Acevedo-Garcia MPA-URP, PhD ^b^ ^3^, Theresa L. Osypuk ScD ^c^ ^4^, Karen E. Peterson ScD, RD
+
+<https://doi.org/10.1016/j.whi.2007.11.001>
+
+individual data nested within census tract level data
+
+2-level linear regression to determine associations between individual level fruit/veg intake and ct level demographics - then conclusions are made like "an increase of XX fruit servings is associated with each 10 percent increase in tract demographics"
+
+could we use similar logic where we have county-level race/income disparities and tract level raw values? then we could form conclusions like "every 10percent increase in countylevel income disparity is associated with a xxx change in tract level housing" is that meaningful?? we can then determine that county-level income or race disparities are associated with XXX census tract characteristics
+
+## Associations between disparities in tobacco retailer density and disparities
+
+in tobacco use
+
+Allison M. Glasser,\* Nathaniel Onnen, Peter F. Craigmile, Elli Schwartz, Megan E. Roberts
+
+<https://doi.org/10.1016/j.ypmed.2021.106910>
+
+focused on ohio
+
+data come from ohio brfss and acs
+
+tobacco retailer density is at CT level
+
+ses and demographic chars at ct level (comes from ACS)
+
+individual level tobacco use survey data
+
+calculated disparities in TRD which were defined as high v low poverty and high v low racial/ethnic minority CT
+
+calculated disparities in tobacco use which were defined as ratio of cig smoking among adults below vs above poverty and among minority vs non minority adults
+
+then calcd correlations between disparities in tobacco retailer density and disparities in cig smoking / tobacco use
+
+## Measuring Geographic and Racial Disparities within Counties, An Exploratory Analysis in New York
+
+this is saved as 01_Manuscript_0906_kg_EB ; it's a working paper from Jun/Keith/EB
+
+keith's summary: "he creates household level data for median household income within tracts by race so household sum totals the ct total AND the race group totals"
+
+-   "we evaluated percent changes and rank order corr of counties between a ct, alone, and ct plus subpop model. on avg, the ct model tended to underestimate the level of disparity in a county compared to that from the model with incorporated subpop data"
+
+    -   percent change is calcd by subtracting the disparity index at the ct level from the disparity index of the subpop divided by the disparity index at the ct level
+
+    -   basically this paper compares county level disparities calcd across cts to county level disparities calcd across race/eth subgroups using simulated data - v similar to what we're trying to do but instead focused on the question of how / whether to account for within tract heterogeneity

@@ -1,0 +1,1584 @@
+---
+title: "v153 Homeownership - disparity calculations"
+author: "GL"
+date: "2024-05-31"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(tidycensus)
+```
+
+# about
+
+v153 Homeownership
+
+numerator = [B25003_002E] Estimate; Total: - Owner occupied
+
+denominator = [B25003_001E] Estimate; Total:
+
+153	Homeownership	v153	NA	B25003	B25003_001	N	Estimate!!Total:	TENURE
+153	Homeownership	v153	NA	B25003	B25003_002	N	Estimate!!Total:!!Owner occupied	TENURE
+
+
+disparity calculations:
+
+-   census tract 
+
+-   race groups
+
+-   income levels
+
+# standard county and state fips
+
+```{r}
+fips <-  bind_rows(
+  haven::read_sas(here::here('01_data/raw', "county_fips_withctnew.sas7bdat") ),
+  haven::read_sas(here::here('01_data/raw', "state_fips.sas7bdat")))  %>% 
+  arrange(statecode, countycode)
+
+```
+
+# BGV
+
+$$BGV=\sum_{i=1}^{n}p_i(y_i-\mu)^2$$
+
+# SD
+
+## Population standard deviation
+If the data is being considered a population on its own, we divide by the number of data points, $N$
+
+$$\sigma=\sqrt\frac{\sum_{i=1}^{N} (x_i - \mu)^2}{N}$$
+
+## Sample standard deviation
+
+If the data is a sample from a larger population, we divide by one fewer than the number of data points in the sample, $n-1$
+
+$$s_x=\sqrt\frac{\sum_{i=1}^{n} (x_i - \mu)^2}{n-1}$$
+
+# Theil
+
+$$T=\frac{1}{n}\sum_{i=i}^{n}\frac{y_i}{\mu}log(\frac{y_i}{\mu})$$
+
+## function: theil_wtd
+
+```{r}
+theil_wtd_gl <- function(x, weights=NULL)
+{
+  if (is.null(weights)){
+    weights <- rep(1, length(x))}
+
+  missing <- !(is.na(x) | is.nan(x) | is.na(weights))
+  x <- x[missing]
+  weights <- weights[missing]
+  if (!all(weights>=0)) stop("At least one weight is negative", call.=FALSE)
+  # if (all(weights == 0)) stop("All weights are zero", call.=FALSE)
+
+  if (all(weights == 0)){return(NA_real_)}
+  else {
+    x_sel <- x[x>0]
+    weights_sel <- weights[x>0]
+    weights_sel <- weights_sel/sum(weights_sel)
+    mean <- stats::weighted.mean(x_sel, weights_sel)
+    x_sel <- x_sel/mean
+    if(length(x_sel)==0){return(NA_real_)} # case for empty vector
+    else{
+      theil <- (sum(weights_sel*x_sel*log(x_sel)))
+      return(theil)}
+    
+  }
+  
+}
+```
+
+```{r}
+# test function
+x <- c(0,1.5,2, NaN)
+theil_wtd_gl(x)
+```
+
+# 1 tracts
+
+## ACS variables 2022
+
+### Detailed Tables (start with B or C)
+```{r}
+yr <- 2022
+
+## Detailed Tables (start with B or C)
+v22 <- load_variables(year = yr, "acs5", cache = TRUE)
+
+vars_B25003 <- v22 %>% 
+  filter(str_detect(name, 'B25003'))
+
+vars_B25003
+```
+
+### S: Subject tables (start with S)
+```{r}
+## S: Subject tables (start with S)
+v22_s <- load_variables(year = yr, dataset = "acs5/subject", cache = TRUE)
+
+v22_s %>% 
+  filter(str_detect(name, "S1901"))
+```
+
+
+### DP: Demographic Profile
+```{r}
+dp22 <- load_variables(2022, "acs5/profile", cache = TRUE)
+
+dp22 %>% 
+  filter(str_detect(name, "DP05"), str_detect(label, regex("Black", ignore_case=TRUE)))
+```
+
+
+## get tract data from Census
+
+```{r}
+# list of state abbreviations
+sort(c(state.abb, "DC"))
+```
+
+### funciton
+
+```{r}
+# get tract level data for all states --------
+get_acs_tract_data <- function(year = year, variables = variables, survey = "acs5") {
+  # tract data
+  print(paste0("Tract-level data: "))
+  
+  # sort(c(state.abb, "DC"))
+  
+  data_tract <- sort(c(state.abb, "DC")) %>% 
+    map(~get_acs(state = .,
+                 geography = "tract",
+                 variables = variables,
+                 year = yr,
+                 survey = survey,
+                 output = "wide"))%>% 
+    bind_rows() %>% 
+    mutate(fipscode = str_sub(GEOID, 1L, 5L),
+           statecode = str_sub(GEOID, 1L, 2L),
+           countycode = str_sub(GEOID, 3L, 5L),
+           .after = "GEOID")  
+  
+  return(data_tract)
+}
+```
+
+### data
+
+```{r}
+acs_2022_v153_tract <- 
+  get_acs_tract_data(year = yr, variables = c('B25003_001', 'B25003_002', 'B01001_001')) %>% 
+  glimpse()
+```
+
+#### explore
+
+pop!=0 & denominator ==0: 258 cases
+pop==0 & denominator ==0: 798 cases
+
+```{r}
+acs_2022_v153_tract %>% 
+  select(1:4, pop = B01001_001E, numerator = B25003_002E, denominator = B25003_001E) %>% 
+  # filter(pop!=0 & denominator ==0)
+  filter(pop==0 & denominator ==0)
+```
+
+#### save
+
+```{r eval=FALSE}
+write_csv(acs_2022_v153_tract, '../01_data/raw/acs_2022_v153_tract.csv')
+```
+
+
+## calculation
+
+```{r}
+v153_disparity_tract <- acs_2022_v153_tract %>% 
+  select(1:4, pop = B01001_001E, numerator = B25003_002E, denominator = B25003_001E) %>% 
+  mutate(rawvalue = numerator/denominator) %>% 
+  mutate(pop_wt = if_else(is.na(rawvalue), 0, pop)) %>% # set pop=0 if a tract has missing raw value, i.e, exclude a tract in weighting if it has missing raw value
+  mutate(pop_th = if_else(rawvalue>0, pop, 0)) %>% # set pop=0 if a tract has missing or 0 raw value, i.e, exclude a tract in weighting if it has missing or 0 raw value
+  group_by(fipscode) %>% 
+  # mutate(pop_i = pop / sum(pop), .after = pop) %>% 
+  mutate(pop_i = pop_wt / sum(pop_wt), .after = pop) %>% 
+  mutate(pop_th_i = pop_th / sum(pop_th)) %>% 
+  mutate(rawvalue_th = if_else(rawvalue ==0|is.nan(rawvalue), NA, rawvalue)) %>% 
+  # filter(fipscode == "15005") %>%
+  summarise(statecode = first(statecode), countycode = first(countycode),
+            num_tract = n(), 
+            num_tract_counted = sum(!is.na(rawvalue)),
+            pop_tot = sum(pop), 
+            pop_counted = sum(pop_wt),
+            mean = mean(rawvalue, na.rm = TRUE),
+            mean_wt = stats::weighted.mean(rawvalue, pop_i, na.rm = TRUE),
+            # mean_wt_2 = sum(pop*rawvalue, na.rm = TRUE)/sum(pop), # this includes tracts with raw value missing but pop is not 0, which causes trouble
+            sd_s = sd(rawvalue, na.rm = TRUE), # sample sd
+            sd_p =  sqrt((num_tract_counted - 1)/num_tract_counted) * sd(rawvalue, na.rm = TRUE), # population SD
+            bgv = sum(pop_i * (rawvalue - mean(rawvalue, na.rm = TRUE))^2, na.rm = TRUE),
+            sd_bgv = sqrt(bgv),
+            bgv_wt = sum(pop_i * (rawvalue - weighted.mean(rawvalue, w = pop_i, na.rm = TRUE))^2, 
+                         na.rm = TRUE),
+            sd_bgv_wt = sqrt(bgv_wt),
+            num_tract_theil_counted = sum(rawvalue>0, na.rm = TRUE),
+            mean_th = mean(rawvalue_th, na.rm = TRUE),
+            mean_th_wt = stats::weighted.mean(rawvalue_th, pop_th, na.rm = TRUE),
+            theil = theil_wtd_gl(rawvalue),
+            theil_wt = theil_wtd_gl(rawvalue, pop_wt),
+            )
+
+v153_disparity_tract
+```
+
+```{r}
+summary(v153_disparity_tract)
+```
+
+```{r}
+v153_disparity_tract %>% 
+  select(num_tract, num_tract_counted , num_tract_theil_counted, pop_tot, pop_counted ) %>% 
+  summarise(across(everything(), sum))
+```
+
+
+
+## compare with Heni
+
+```{r eval=FALSE}
+# v153_BGV_CT_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_BGV_CT _05172024.xlsx")
+# v153_BGV_CT_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_06042024_v2.xlsx")
+# v153_BGV_CT_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_Data_CT_SN_06042024.xlsx")
+# v153_BGV_CT_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_06042024_v3B.xlsx")
+# v153_BGV_CT_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_BGV_SN_06042024.xlsx")
+# v153_BGV_CT_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_BGV_CT_SN_06052024.xlsx")
+# v153_BGV_CT_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_Theil_CT_SN_06132024.xlsx")
+# v153_BGV_CT_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_mean_CT_Theil_SN_06142024.xlsx")
+v153_BGV_CT_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_Theil_CT_SN_06142024_v0.xlsx")
+
+
+# v153_BGV_CT_heni <- v153_BGV_CT_heni %>% 
+#   select(fipscode, Count_CT, Pop_tot_fips:v153_wgtmean_CT_fips) %>% 
+#   distinct(fipscode, .keep_all = TRUE)
+
+v153_BGV_CT_heni
+```
+
+```{r eval=FALSE}
+names(v153_BGV_CT_heni)
+```
+
+
+```{r eval=FALSE}
+compare_tract <- v153_BGV_CT_heni %>% 
+  # select(fipscode, num_tracts_h=Count_CT, pop_sum_h = Pop_tot_fips, mean_h = v153_mean_CT_fips, sd_h = v153_SD_CT, bvg_h = v153_BGV_CT) %>% 
+  # select(fipscode, num_tracts_h=Count_CT, pop_sum_h = Pop_tot_fips,Pop_mean_fips, mean_h = v153_mean_CT_fips, mean_wt_h = v153_wgtmean_CT_fips,
+  #        bgv_h = v153_Unwgt_BGV_CT, sd_h = v153_Unwgt_SD_CT, bgv_wt_h = v153_Wgt_BGV_CT, sd_wt_h = v153_Wgt_SD_CT
+  #        ) %>%
+  # select(fipscode, num_tract_tot_h=num_tract_tot, pop_sum_h = Pop_tot_fips,Pop_mean_fips, mean_h = v153_mean_CT_fips, mean_wt_h = v153_wgtmean_CT_fips,
+  #        bgv_h = v153_Unwgt_BGV_CT, sd_h = v153_Unwgt_SD_CT, bgv_wt_h = v153_Wgt_BGV_CT, sd_wt_h = v153_Wgt_SD_CT
+  #        ) %>% 
+  # select(fipscode, num_tract_theil_h=num_tract_Theil, 
+  #        mean_th_h = v153_unwgtmean_CT_Theil, mean_th_wt_h = v153_wgtmean_CT_Theil
+  #        ) %>% 
+  select(fipscode, num_tract_theil_h=num_tract_Theil,
+         theil_h = v153_Unwgt_Theil_CT, theil_wt_h = v153_Wgt_Theil_CT
+         ) %>%
+  left_join(v153_disparity_tract, by = c("fipscode"))
+
+compare_tract
+```
+
+```{r eval=FALSE}
+compare_tract %>% 
+  # filter(num_tracts_h != num_tracts) %>% 
+  # filter(pop_sum_h != pop_sum) %>% 
+  # select(fipscode, mean_h, mean) %>% filter(!near(mean_h, mean, tol = 1e-7)) %>% 
+  # select(fipscode, mean_wt_h, mean_wt) %>% filter(!near(mean_wt_h, mean_wt, tol = 1e-6) | (is.na(mean_wt_h) + is.na(mean_wt)==1))
+  # select(fipscode, bgv_h, bgv) %>% filter(!near(bgv_h, bgv, tol = 1e-8) | (is.na(bgv_h) + is.na(bgv)==1))
+  # select(fipscode, bgv_wt_h, bgv_wt) %>% filter(!near(bgv_wt_h,bgv_wt, tol = 1e-7) | (is.na(bgv_wt_h) + is.na(bgv_wt)==1) )
+  # select(fipscode, sd_h, sd_bgv) %>% filter(!near(sd_h, sd_bgv, tol = 1e-6) | (is.na(sd_h) + is.na(sd_bgv)==1))
+  # select(fipscode, sd_wt_h, sd_bgv_wt) %>% filter(!near(sd_wt_h, sd_bgv_wt, tol = 1e-6) | (is.na(sd_wt_h) + is.na(sd_bgv_wt)==1))
+  # select(fipscode, mean_th_h, mean_th) %>% filter(!near(mean_th_h, mean_th, tol = 1e-6) | (is.na(mean_th_h) + is.na(mean_th)==1))
+  # select(fipscode, theil_h, theil) %>% filter(!near(theil_h, theil, tol = 1e-7) | (is.na(theil_h) + is.na(theil)==1))
+  select(fipscode, theil_wt_h, theil_wt) %>% filter(!near(theil_wt_h, theil_wt, tol = 1e-10) | (is.na(theil_wt_h) + is.na(theil_wt)==1))
+```
+
+```{r eval=FALSE}
+acs_2022_v153_tract %>% 
+  select(1:4, pop = B01001_001E, numerator = B25003_002E, denominator = B25003_001E) %>% 
+  mutate(rawvalue = numerator/denominator) %>% 
+  mutate(pop_wt = if_else(is.na(rawvalue), 0, pop)) %>% # set pop=0 if a tract has missing raw value, i.e, exclude a tract in weighting if it has missing raw value
+  filter(fipscode == "01101") %>% 
+  select(fipscode, numerator, denominator, rawvalue) %>% 
+  group_by(fipscode) %>% 
+  mutate(mean = mean(rawvalue, na.rm = TRUE),
+    th = rawvalue/mean * log(rawvalue/mean)) %>% 
+  summarise(
+    th_sum = sum(th, na.rm = TRUE),
+    theil = mean(th, na.rm = TRUE),
+            n_tot = n(),
+            n = sum((is.nan(th))))
+  
+```
+## save data
+
+```{r eval=FALSE}
+v153_disparity_tract %>% 
+  select(-c(sd_s, sd_p)) %>% 
+  write_csv("../01_data/processed/v153_disparity_tract_GL.csv", na="")
+
+```
+
+## explore data
+
+### WI
+```{r}
+v153_disparity_tract %>% 
+  filter(statecode == "55")
+```
+
+
+# ----------
+
+# 2 race groups: county level
+
+-   8 groups
+
+get v153 data by race: Tenure, 2022 ACS 5-Year Estimates, county level, tables: 
+•	B25003B: Black
+•	B25003C: AIAN
+•	B25003D: ASIAN
+•	B25003E: NHOPI
+•	B25003F: SOR (Some Other Race)
+•	B25003G: TOMR (Two or More Races)
+•	B25003H: WHITE ALONE, Not Hispanic or Latino
+•	B25003I: Hispanic
+Numerators: [B25003B_002E] for Black through [B25003I_002E] for Hispanic
+Denominators: [B25003B_001E] for Black through [B25003I_001E] for Hispanic
+
+
+## function
+
+```{r}
+get_acs_data <- function(year = year, variables = variables, survey = "acs5") {
+  # county data
+  print("County-level data")
+  cnt <- get_acs(
+    geography = "county",
+    variables = variables,
+    year = year,
+    survey = survey,
+    output = "wide"
+  )
+
+  # state data
+  print("State-level data")
+  st <- get_acs(
+    geography = "state",
+    variables = variables,
+    year = year,
+    survey = survey,
+    output = "wide"
+  )
+
+  # us data
+  print("National data")
+  us <- get_acs(
+    geography = "us",
+    variables = variables,
+    year = year,
+    survey = survey,
+    output = "wide"
+  ) %>% 
+    mutate(GEOID = '0')
+
+  # combine county, state, us data;
+  data_all <- bind_rows(cnt, st, us) %>%
+    arrange(GEOID) %>%
+    # format GEOID;
+    mutate(GEOID = str_pad(GEOID, 5, "right", "0")) %>%
+    # add countycode, statecode;
+    mutate(
+      statecode = str_sub(GEOID, 1L, 2L),
+      countycode = str_sub(GEOID, 3L, 5L),
+      .after = "GEOID"
+    ) %>%
+    # remove PR
+    filter(statecode != "72")
+  
+  return(data_all)
+}
+```
+
+## data
+
+### variables: v153 by race
+```{r}
+vars_B25003 %>% 
+  slice(4:27) %>% 
+  filter(!str_detect(name, "_003"))
+```
+
+```{r}
+vars_v153_race <- vars_B25003 %>% 
+               slice(4:27) %>% filter(!str_detect(name, "_003")) %>% 
+               pull(name)
+
+vars_v153_race
+```
+
+### variables: pop by race
+
+```{r}
+v22 %>% 
+  filter(str_detect(name, "B01001"), str_detect(name, "_001")) %>% 
+  slice(2:9)
+```
+
+```{r}
+vars_pop_race <- v22 %>% 
+  filter(str_detect(name, "B01001"), str_detect(name, "_001")) %>% 
+  slice(2:9) %>% 
+  pull(name)
+
+vars_pop_race
+```
+
+### get data
+
+```{r}
+# county level
+acs_2022_v153_race <- get_acs_data(year = yr, variables = c(vars_v153_race,vars_pop_race) )
+
+acs_2022_v153_race
+```
+
+#### save
+```{r eval=FALSE}
+write_csv(acs_2022_v153_race, "../01_data/raw/acs_2022_v153_race.csv")
+```
+
+#### DP
+DP05_0080	Estimate!!HISPANIC OR LATINO AND RACE!!Total population!!Not Hispanic or Latino!!Black or African American alone
+DP05_0038	Estimate!!RACE!!Total population!!One race!!Black or African American
+DP05_0067	Estimate!!Race alone or in combination with one or more other races!!Total population!!Black or African American
+
+
+```{r}
+pop_dp <- get_acs_data(year = yr, 
+                       variables = c('DP05_0080','DP05_0038', 'DP05_0067') )
+
+```
+
+## calculation
+
+### numerator
+
+```{r}
+acs_2022_v153_race_num <- acs_2022_v153_race %>% 
+  select(fipscode = 1, 2:3, starts_with('B25003')) %>% 
+  filter(countycode != "000") %>% 
+  select(1:3, ends_with('_002E')) %>% 
+  pivot_longer(cols = starts_with("B25003"), names_to = "race", values_to = "numerator")%>% 
+  mutate(race = str_remove_all(race, "B25003|_002E"))
+
+acs_2022_v153_race_num
+```
+
+### denominator
+```{r}
+acs_2022_v153_race_den <- acs_2022_v153_race %>% 
+  select(fipscode = 1, 2:3, starts_with('B25003')) %>% 
+  filter(countycode != "000") %>% 
+  select(1:3, ends_with('_001E')) %>% 
+  pivot_longer(cols = starts_with("B25003"), names_to = "race", values_to = "denominator") %>% 
+  mutate(race = str_remove_all(race, "B25003|_001E"))
+
+acs_2022_v153_race_den
+```
+
+### pop
+
+```{r}
+acs_2022_v153_race_pop <- acs_2022_v153_race %>% 
+  select(fipscode = 1, 2:3, starts_with('B01001')) %>% 
+  filter(countycode != "000") %>% 
+  select(1:3, ends_with('_001E')) %>% 
+  pivot_longer(cols = starts_with("B01001"), names_to = "race", values_to = "pop") %>% 
+  mutate(race = str_remove_all(race, "B01001|_001E"))
+
+acs_2022_v153_race_pop
+```
+
+### disparity
+
+```{r}
+v153_disparity_race <- purrr::reduce(
+  list(acs_2022_v153_race_pop, acs_2022_v153_race_num, acs_2022_v153_race_den),
+  dplyr::left_join,
+  by = c('fipscode', 'statecode', 'countycode', 'race')
+) %>% 
+  mutate(rawvalue = numerator/denominator) %>% 
+  mutate(pop_wt = if_else(is.na(rawvalue), 0, pop)) %>% # set pop=0 if a group has missing raw value, i.e, exclude a group in weighting if it has missing raw value
+  mutate(pop_th = if_else(rawvalue>0, pop, 0)) %>% # set pop=0 if a tract has missing or 0 raw value, i.e, exclude a tract in weighting if it has missing or 0 raw value
+  group_by(fipscode) %>% 
+  mutate(pop_i = pop_wt / sum(pop_wt), .after = pop) %>% 
+  mutate(rawvalue_th = if_else(rawvalue ==0|is.nan(rawvalue), NA, rawvalue)) %>% 
+  summarise(statecode = first(statecode), countycode = first(countycode),
+            num_grp = n(), 
+            num_grp_counted = sum(!is.na(rawvalue)),
+            pop_tot = sum(pop), 
+            pop_counted = sum(pop_wt),
+            mean = mean(rawvalue, na.rm = TRUE),
+            mean_wt = stats::weighted.mean(rawvalue, pop_i, na.rm = TRUE),
+            sd_s = sd(rawvalue, na.rm = TRUE), # sample sd
+            sd_p =  sqrt((num_grp_counted - 1)/num_grp_counted) * sd(rawvalue, na.rm = TRUE), # population SD
+            bgv = sum(pop_i * (rawvalue - mean(rawvalue, na.rm = TRUE))^2, na.rm = TRUE),
+            sd_bgv = sqrt(bgv),
+            bgv_wt = sum(pop_i * (rawvalue - weighted.mean(rawvalue, w = pop_i, na.rm = TRUE))^2, 
+                         na.rm = TRUE),
+            sd_bgv_wt = sqrt(bgv_wt),
+            num_tract_theil_counted = sum(rawvalue>0, na.rm = TRUE),
+            mean_th = mean(rawvalue_th, na.rm = TRUE),
+            mean_th_wt = stats::weighted.mean(rawvalue_th, pop_th, na.rm = TRUE),
+            theil = theil_wtd_gl(rawvalue),
+            theil_wt = theil_wtd_gl(rawvalue, pop_wt),
+            )
+
+v153_disparity_race
+```
+
+## compare with Heni
+
+```{r eval=FALSE}
+# v153_Race_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_mean_Race_06072024.xlsx")
+# v153_Race_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_wgtmean_Race_06072024.xlsx")
+# v153_Race_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_BGV_Race_SN_06072024.xlsx")
+# v153_Race_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_mean_Race_Theil_SN_06172024.xlsx")
+v153_Race_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_Theil_Race_SN_06172024_v0.xlsx")
+
+v153_Race_heni
+```
+
+```{r eval=FALSE}
+names(v153_Race_heni)
+```
+
+```{r eval=FALSE}
+v153_Race_heni %>% 
+  select(1, contains("Theil"))
+```
+
+
+```{r eval=FALSE}
+compare_Race <- v153_Race_heni %>% 
+  # select(fipscode, pop_sum_h = pop_Race, mean_h = v153_mean_Race) %>%
+  # select(fipscode, pop_counted_h = pop_counted, mean_wt_h = v153_wgtmean_Race) %>%
+  # select(fipscode, bgv_h = v153_Unwgt_BGV_Race, sd_h = v153_Unwgt_SD_Race,
+  #        bgv_wt_h=v153_Wgt_BGV_Race, sd_wt_h = v153_Wgt_SD_Race) %>%
+  # select(fipscode, mean_th_h = v153_unwgtmean_Race_Theil,  mean_th_wt_h = v153_wgtmean_Race_Theil) %>%
+  select(fipscode, theil_h = v153_Unwgt_Theil_Race,  theil_wt_h = v153_Wgt_Theil_Race) %>%
+  left_join(v153_disparity_race, 
+            by = c("fipscode"))
+
+compare_Race
+```
+
+```{r eval=FALSE}
+compare_Race %>% 
+  # filter(pop_sum_h != pop_tot)
+  # select(fipscode, mean_h, mean) %>% filter(!near(mean_h, mean, tol = 1e-7))
+  # select(fipscode, pop_counted_h, pop_counted) %>% filter(!near(pop_counted_h, pop_counted, tol = 1e-7))
+  # select(fipscode, mean_wt_h, mean_wt) %>% filter(!near(mean_wt_h, mean_wt, tol = 1e-7))
+  # select(fipscode, mean_wt_h, mean_wt) %>% filter(!near(mean_wt_h, mean_wt, tol = 1e-6) | (is.na(mean_wt_h) + is.na(mean_wt)==1))
+  # select(fipscode, bgv_h, bgv) %>% filter(!near(bgv_h, bgv, tol = 1e-8) | (is.na(bgv_h) + is.na(bgv)==1))
+  # select(fipscode, bgv_wt_h, bgv_wt) %>% filter(!near(bgv_wt_h,bgv_wt, tol = 1e-8) | (is.na(bgv_wt_h) + is.na(bgv_wt)==1) )
+  # select(fipscode, sd_h, sd_bgv) %>% filter(!near(sd_h, sd_bgv, tol = 1e-10) | (is.na(sd_h) + is.na(sd_bgv)==1))
+  # select(fipscode, sd_wt_h, sd_bgv_wt) %>% filter(!near(sd_wt_h, sd_bgv_wt, tol = 1e-6) | (is.na(sd_wt_h) + is.na(sd_bgv_wt)==1))
+  # select(fipscode, mean_th_h, mean_th) %>% filter(!near(mean_th_h, mean_th, tol = 1e-6) | (is.na(mean_th_h) + is.na(mean_th)==1))
+  # select(fipscode, mean_th_wt_h, mean_th_wt) %>% filter(!near(mean_th_wt_h, mean_th_wt, tol = 1e-6) | (is.na(mean_th_wt_h) + is.na(mean_th_wt)==1))
+  # select(fipscode, theil_h, theil) %>% filter(!near(theil_h, theil, tol = 1e-6) | (is.na(theil_h) + is.na(theil)==1))
+  select(fipscode, theil_wt_h, theil_wt) %>% filter(!near(theil_wt_h, theil_wt, tol = 1e-6) | (is.na(theil_wt_h) + is.na(theil_wt)==1))
+```
+
+
+## save data
+
+```{r eval=FALSE}
+v153_disparity_race %>% 
+  select(-c(sd_s, sd_p)) %>% 
+  write_csv("../01_data/processed/v153_disparity_race_GL.csv", na="")
+
+```
+
+## explore data
+
+```{r}
+v153_disparity_race %>% 
+  summarise(across(where(is.numeric), ~sum(.)))
+```
+
+### WI
+```{r}
+v153_disparity_race %>% 
+  filter(statecode == "55")
+```
+
+# ----------
+
+# 2b. tracts + race
+
+## data
+
+```{r}
+vars_v153_race
+
+vars_pop_race
+```
+
+```{r}
+# tract level
+acs_2022_v153_race_tract <- get_acs_tract_data(year = yr, variables = c(vars_v153_race,vars_pop_race))
+
+acs_2022_v153_race_tract
+```
+
+### save
+
+```{r eval=FALSE}
+write_csv(acs_2022_v153_race_tract, "../01_data/raw/acs_2022_v153_race_tract.csv")
+```
+
+## calculation
+### numerator
+```{r}
+acs_2022_v153_race_tract_num <- acs_2022_v153_race_tract %>% 
+  select(1:4, starts_with('B25003')) %>% 
+  select(1:4, ends_with('_002E')) %>% 
+  pivot_longer(cols = starts_with("B25003"), names_to = "race", values_to = "numerator")%>% 
+  mutate(race = str_remove_all(race, "B25003|_002E"))
+
+acs_2022_v153_race_tract_num
+```
+
+### denominator
+```{r}
+acs_2022_v153_race_tract_den <- acs_2022_v153_race_tract %>% 
+  select(1:4, starts_with('B25003')) %>% 
+  select(1:4, ends_with('_001E')) %>% 
+  pivot_longer(cols = starts_with("B25003"), names_to = "race", values_to = "denominator")%>% 
+  mutate(race = str_remove_all(race, "B25003|_001E"))
+
+acs_2022_v153_race_tract_den
+```
+
+### pop
+
+```{r}
+acs_2022_v153_race_tract_pop <- acs_2022_v153_race_tract %>% 
+  select(1:4, starts_with('B01001')) %>% 
+  select(1:4, ends_with('_001E')) %>% 
+  pivot_longer(cols = starts_with("B01001"), names_to = "race", values_to = "pop") %>% 
+  mutate(race = str_remove_all(race, "B01001|_001E"))
+
+acs_2022_v153_race_tract_pop
+```
+
+### disparity
+
+```{r}
+v153_disparity_race_tract <- purrr::reduce(
+  list(acs_2022_v153_race_tract_pop, acs_2022_v153_race_tract_num, acs_2022_v153_race_tract_den),
+  dplyr::left_join,
+  by = c('GEOID','fipscode', 'statecode', 'countycode', 'race')
+) %>% 
+  mutate(rawvalue = numerator/denominator) %>% 
+  mutate(pop_wt = if_else(is.na(rawvalue), 0, pop)) %>% 
+  group_by(fipscode) %>% 
+  # mutate(pop_i = pop / sum(pop), .after = pop) %>% 
+  mutate(pop_i = pop_wt / sum(pop_wt), .after = pop) %>% 
+  summarise(statecode = first(statecode), countycode = first(countycode),
+            num_grp = n(), 
+            num_grp_counted = sum(!is.na(rawvalue)),
+            pop_tot = sum(pop), 
+            pop_counted = sum(pop_wt),
+            mean = mean(rawvalue, na.rm = TRUE),
+            mean_wt = stats::weighted.mean(rawvalue, pop_i, na.rm = TRUE),
+            # mean_wt_2 = sum(pop*rawvalue, na.rm = TRUE)/sum(pop), # this includes tracts with raw value missing but pop is not 0, which causes trouble
+            sd_s = sd(rawvalue, na.rm = TRUE), # sample sd
+            # sd =  sqrt((num_tracts - 1)/num_tracts) * sd(rawvalue, na.rm = TRUE), # population SD
+            sd_p =  sqrt((num_grp_counted - 1)/num_grp_counted) * sd(rawvalue, na.rm = TRUE), # population SD
+            bgv = sum(pop_i * (rawvalue - mean(rawvalue, na.rm = TRUE))^2, na.rm = TRUE),
+            sd_bgv = sqrt(bgv),
+            bgv_wt = sum(pop_i * (rawvalue - weighted.mean(rawvalue, w = pop_i, na.rm = TRUE))^2, 
+                         na.rm = TRUE),
+            sd_bgv_wt = sqrt(bgv_wt),
+            )
+
+v153_disparity_race_tract
+```
+
+## explore
+
+### WI
+
+```{r}
+v153_disparity_race_tract %>% 
+  filter(statecode=="55")
+```
+
+```{r}
+v153_disparity_tract %>% 
+  filter(statecode=="55")
+```
+
+```{r}
+v153_disparity_race %>% 
+  filter(statecode=="55")
+```
+
+# tract vs. race vs. tract+trace
+
+```{r}
+v153_disparity_tract %>% 
+  select(-c(statecode, countycode, sd_s, sd_p), -starts_with("pop")) %>% 
+  rename_with(.fn = ~paste0(.x, "_Tract"), .cols = c("mean", "mean_wt", "bgv" , "sd_bgv", "bgv_wt", "sd_bgv_wt" ))
+
+v153_disparity_race %>% 
+  select(-c(statecode, countycode, sd_s, sd_p), -starts_with("pop")) %>% 
+  rename_with(.fn = ~paste0(.x, "_Race"), .cols = c("mean", "mean_wt", "bgv" , "sd_bgv", "bgv_wt", "sd_bgv_wt" ))
+
+v153_disparity_race_tract %>% 
+  select(-c(statecode, countycode, sd_s, sd_p), -starts_with("pop")) %>% 
+  rename_with(.fn = ~paste0(.x, "_RandT"), .cols = c("num_grp", "num_grp_counted", "mean", "mean_wt", "bgv" , "sd_bgv", "bgv_wt", "sd_bgv_wt" ))
+```
+
+```{r}
+v153_disparity_TractRaceTandR <- purrr::reduce(
+  list(
+    v153_disparity_tract %>% 
+      select(-c(statecode, countycode, sd_s, sd_p), -starts_with("pop")) %>% 
+      rename(num_grp = num_tract, num_grp_counted = num_tract_counted) %>% 
+      rename_with(.fn = ~paste0(.x, "_Tract"), .cols = c('num_grp', 'num_grp_counted',"mean", "mean_wt", "bgv" , "sd_bgv", "bgv_wt", "sd_bgv_wt" )),
+
+    v153_disparity_race %>% 
+      select(-c(statecode, countycode, sd_s, sd_p), -starts_with("pop")) %>% 
+      rename_with(.fn = ~paste0(.x, "_Race"), .cols = c("num_grp", "num_grp_counted","mean", "mean_wt", "bgv" , "sd_bgv", "bgv_wt", "sd_bgv_wt" )),
+
+    v153_disparity_race_tract %>% 
+      select(-c(statecode, countycode, sd_s, sd_p), -starts_with("pop")) %>% 
+      rename_with(.fn = ~paste0(.x, "_RandT"), .cols = c("num_grp", "num_grp_counted", "mean", "mean_wt", "bgv" , "sd_bgv", "bgv_wt", "sd_bgv_wt" ))
+        
+    ),
+  dplyr::left_join,
+  by = c('fipscode')
+) %>% 
+  left_join(fips, by = "fipscode") %>% 
+  select(fipscode, statecode, countycode, state, county, everything())
+
+v153_disparity_TractRaceTandR
+```
+
+```{r}
+p <- v153_disparity_TractRaceTandR %>% 
+  filter(state=="WI") %>% 
+  select(-starts_with("num_grp"), -c(2:5)) %>% 
+  pivot_longer(cols = c(mean_Tract:sd_bgv_wt_RandT), names_to = "name", values_to = "value") %>% 
+  mutate(variable = str_remove_all(name, "_Tract|_Race|_RandT"),
+         cat = case_when(
+           str_detect(name, "_Tract$") ~ 1,
+           str_detect(name, "_Race$") ~ 2,
+           str_detect(name, "_RandT$") ~ 3,
+         )
+         ) %>% 
+  filter(variable %in% c("mean")) %>% 
+  ggplot(aes(fipscode, value, group = name, color = fct_reorder(name, cat) )) +
+  geom_line() + geom_point() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        legend.title=element_blank(),
+        legend.position="bottom") +
+  labs(title = "mean")
+
+plotly::ggplotly(
+  p
+)
+```
+
+
+```{r}
+c("_Tract", "_Race", "_RandT")
+
+rep("mean", 3)
+
+paste0("mean", c("_Tract", "_Race", "_RandT"))
+
+eval(substitute('mean_Tract'), v153_disparity_TractRaceTandR)
+```
+```{r}
+library(plotly)
+
+st <- "WI"
+
+stats <- "mean"
+
+y_cols <- paste0(stats, c("_Tract", "_Race", "_RandT"))
+
+plot_ly(v153_disparity_TractRaceTandR %>% 
+          filter(state==st) %>% 
+          select(-starts_with("num_grp")),
+        x = ~fct_reorder(county, fipscode), y = ~ mean_Tract, name = "mean_Tract",
+        type = 'scatter',mode = 'lines+markers'
+  ) %>% 
+  add_trace(
+    y = ~mean_Race, name = "mean_Race"
+  ) %>%
+  add_trace(
+    y = ~mean_RandT, name = "mean_RandT"
+  ) %>%
+  layout(title = paste0("State: ", st),
+         xaxis = list(title = "County"),
+         yaxis = list (title = stats))
+```
+
+
+```{r}
+library(plotly)
+
+st <- "WI"
+
+stats <- "mean"
+
+y_cols <- paste0(stats, c("_Tract", "_Race", "_RandT"))
+
+plot_ly(v153_disparity_TractRaceTandR %>% 
+          filter(state==st) %>% 
+          select(-starts_with("num_grp"), -c(2:5)),
+        x = ~fipscode, y = ~ select(.data, y_cols[1]) %>% pull() , name = y_cols[1],
+        type = 'scatter',mode = 'lines+markers'
+  ) %>% 
+  add_trace(
+    y = ~select(.data, y_cols[2]) %>% pull() , name = y_cols[2]
+  ) %>%
+  add_trace(
+    y = ~select(.data, y_cols[3]) %>% pull() , name = y_cols[3]
+  ) %>%
+  layout(title = paste0("State: ", st),
+         xaxis = list(title = "County"),
+         yaxis = list (title = stats))
+```
+
+## funciton: plot a stats in a state
+
+```{r}
+plot_one_stats <- function(df, state_abbr, stats_sel ){
+
+  y_cols <- paste0(stats_sel, c("_Tract", "_Race", "_RandT"))
+  
+  plot_ly(df %>% 
+            filter(state==state_abbr) %>% 
+            select(-starts_with("num_grp")),
+          x = ~fct_reorder(county, fipscode), y = ~ select(.data, y_cols[1]) %>% pull() , name = y_cols[1],
+          type = 'scatter',mode = 'lines+markers'
+    ) %>% 
+    add_trace(
+      y = ~select(.data, y_cols[2]) %>% pull() , name = y_cols[2]
+    ) %>%
+    add_trace(
+      y = ~select(.data, y_cols[3]) %>% pull() , name = y_cols[3]
+    ) %>%
+    layout(title = paste0("State: ", st),
+           xaxis = list(title = "County"),
+           yaxis = list (title = stats_sel))
+}
+
+plot_one_stats(df=v153_disparity_TractRaceTandR, state_abbr="WI", stats_sel = "mean_wt" )
+```
+
+
+## mean
+```{r}
+# mean
+plotly::ggplotly(
+  v153_disparity_TractRaceTandR %>% 
+  filter(str_detect(fipscode, "^55")) %>% 
+  select(1, mean_Tract, mean_Race, mean_RandT) %>% 
+  pivot_longer(cols = c(2:4), names_to = "var", values_to = "mean") %>% 
+  ggplot(aes(fipscode, mean, group = var, color = var)) +
+  geom_line() +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(title = "mean")
+)
+
+```
+
+```{r}
+plot_one_stats(df=v153_disparity_TractRaceTandR, state_abbr="WI", stats_sel = "mean" )
+```
+
+
+## mean_wt
+
+-   weighted mean: align with county-level ranking data
+
+```{r}
+# mean_wt
+plotly::ggplotly(
+  v153_disparity_TractRaceTandR %>% 
+  filter(str_detect(fipscode, "^55")) %>% 
+  select(1, mean_wt_Tract, mean_wt_Race, mean_wt_RandT) %>% 
+  pivot_longer(cols = c(2:4), names_to = "var", values_to = "mean_wt") %>% 
+  ggplot(aes(fipscode, mean_wt, group = var, color = var)) +
+  geom_line() +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(title = "weighted mean - WI")
+)
+
+```
+
+```{r}
+plot_one_stats(df=v153_disparity_TractRaceTandR, state_abbr="WI", stats_sel = "mean_wt" )
+```
+
+## bgv
+```{r}
+# bgv
+plotly::ggplotly(
+  v153_disparity_TractRaceTandR %>% 
+  filter(str_detect(fipscode, "^55")) %>% 
+  select(1, bgv_Tract, bgv_Race, bgv_RandT) %>% 
+  pivot_longer(cols = c(2:4), names_to = "var", values_to = "bgv") %>% 
+  ggplot(aes(fipscode, bgv, group = var, color = var)) +
+  geom_line() +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(title = "BGV - WI")
+)
+```
+
+```{r}
+plot_one_stats(df=v153_disparity_TractRaceTandR, state_abbr="WI", stats_sel = "bgv" )
+```
+
+## sd_bgv
+```{r}
+# bgv
+plotly::ggplotly(
+  v153_disparity_TractRaceTandR %>% 
+  filter(str_detect(fipscode, "^55")) %>% 
+  select(1, sd_bgv_Tract, sd_bgv_Race, sd_bgv_RandT) %>% 
+  pivot_longer(cols = c(2:4), names_to = "var", values_to = "sd_bgv") %>% 
+  ggplot(aes(fipscode, sd_bgv, group = var, color = var)) +
+  geom_line() +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  
+)
+```
+
+```{r}
+plot_one_stats(df=v153_disparity_TractRaceTandR, state_abbr="WI", stats_sel = "sd_bgv" )
+```
+
+## bgv_wt
+```{r}
+# bgv_wt
+plotly::ggplotly(
+  v153_disparity_TractRaceTandR %>% 
+  filter(str_detect(fipscode, "^55")) %>% 
+  select(1, bgv_wt_Tract, bgv_wt_Race, bgv_wt_RandT) %>% 
+  pivot_longer(cols = c(2:4), names_to = "var", values_to = "bgv_wt") %>% 
+  ggplot(aes(fipscode, bgv_wt, group = var, color = var)) +
+  geom_line() +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(title = "weighted BGV - WI")
+  
+)
+```
+
+```{r}
+plot_one_stats(df=v153_disparity_TractRaceTandR, state_abbr="WI", stats_sel = "bgv_wt" )
+```
+
+## sd_bgv_wt
+
+```{r}
+# bgv_wt
+plotly::ggplotly(
+  v153_disparity_TractRaceTandR %>% 
+  filter(str_detect(fipscode, "^55")) %>%
+  select(1, sd_bgv_wt_Tract, sd_bgv_wt_Race, sd_bgv_wt_RandT) %>% 
+  pivot_longer(cols = c(2:4), names_to = "var", values_to = "sd_bgv_wt") %>% 
+  ggplot(aes(fipscode, sd_bgv_wt, group = var, color = var)) +
+  geom_line() +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+)
+```
+
+```{r}
+plot_one_stats(df=v153_disparity_TractRaceTandR, state_abbr="WI", stats_sel = "sd_bgv_wt" )
+```
+
+## mean_wt vs. sd_bgv_wt
+
+```{r}
+# mean_wt vs. sd_bgv_wt
+plotly::ggplotly(
+  purrr::reduce(
+  list(
+    v153_disparity_tract %>% 
+      select(-c(statecode, countycode, sd_s, sd_p), -starts_with("pop")) %>% 
+      rename_with(.fn = ~paste0(.x, "_Tract"), .cols = c("mean", "mean_wt", "bgv" , "sd_bgv", "bgv_wt", "sd_bgv_wt" )),
+
+    v153_disparity_race %>% 
+      select(-c(statecode, countycode, sd_s, sd_p), -starts_with("pop")) %>% 
+      rename_with(.fn = ~paste0(.x, "_Race"), .cols = c("mean", "mean_wt", "bgv" , "sd_bgv", "bgv_wt", "sd_bgv_wt" )),
+
+    v153_disparity_race_tract %>% 
+      select(-c(statecode, countycode, sd_s, sd_p), -starts_with("pop")) %>% 
+      rename_with(.fn = ~paste0(.x, "_RandT"), .cols = c("num_grp", "num_grp_counted", "mean", "mean_wt", "bgv" , "sd_bgv", "bgv_wt", "sd_bgv_wt" ))
+        
+    ),
+  dplyr::left_join,
+  by = c('fipscode')
+) %>% 
+  filter(str_detect(fipscode, "^55")) %>%
+  select(1, contains("_wt_")) %>% 
+  select(-c(bgv_wt_Tract, bgv_wt_Race, bgv_wt_RandT)) %>% 
+  pivot_longer(cols = c(mean_wt_Tract:sd_bgv_wt_RandT), names_to = "variable", values_to = "value") %>% 
+  ggplot(aes(fipscode, value, group = variable, color = variable)) +
+  geom_line() +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+)
+```
+
+# ----------
+
+# 3 income levels: county
+
+## household
+
+[Household](https://www.census.gov/programs-surveys/cps/technical-documentation/subject-definitions.html#household)
+
+-   household
+
+A household consists of all the people who occupy a housing unit. A house, an apartment or other group of rooms, or a single room, is regarded as a housing unit when it is occupied or intended for occupancy as separate living quarters; that is, when the occupants do not live with any other persons in the structure and there is direct access from the outside or through a common hall.
+
+A household includes the related family members and all the unrelated people, if any, such as lodgers, foster children, wards, or employees who share the housing unit. A person living alone in a housing unit, or a group of unrelated people sharing a housing unit such as partners or roomers, is also counted as a household. The count of households excludes group quarters. There are two major categories of households, "family" and "nonfamily". (See definitions of Family household and Nonfamily household).
+
+-   Family household 
+
+A family household is a household maintained by a householder who is in a family (as defined above), and includes any unrelated people (unrelated subfamily members and/or secondary individuals) who may be residing there. The number of family households is equal to the number of families. The count of family household members differs from the count of family members, however, in that the family household members include all people living in the household, whereas family members include only the householder and his/her relatives. See the definition of family.
+
+-   Nonfamily household
+
+Household, nonfamily
+A nonfamily household consists of a householder living alone (a one-person household) or where the householder shares the home exclusively with people to whom he/she is not related.
+
+## data
+
+### varialbes: B25118
+
+
+```{r}
+income_owner <- v22 %>% 
+  filter(str_detect(name, "B25118"), str_detect(label, "Owner"), str_detect(label, "\\$")) 
+
+income_owner
+```
+
+```{r}
+income_renter <- v22 %>% 
+  filter(str_detect(name, "B25118"), str_detect(label, "Renter"), str_detect(label, "\\$")) 
+
+income_renter
+```
+
+### get B25118
+
+#### owner
+
+```{r}
+acs_2022_B25118_owner <- get_acs_data(year = yr, 
+                                      variables = c(income_owner$name))
+
+acs_2022_B25118_owner
+```
+
+```{r}
+acs_2022_B25118_owner_long <- acs_2022_B25118_owner %>% 
+  select(fipscode = 1, 2:3, starts_with('B25118')) %>% 
+  filter(countycode != "000") %>% 
+  select(1:3, ends_with('E')) %>% 
+  pivot_longer(cols = starts_with('B25118'), names_to = "name", values_to = 'numerator') %>% 
+  mutate(name = str_remove(name, "E")) %>% 
+  left_join(income_owner %>% 
+              select(1:2) %>% 
+              mutate(label = str_remove(label, "Estimate!!Total:!!Owner occupied:!!")),
+            by = "name"
+  )
+
+acs_2022_B25118_owner_long
+```
+
+#### renter
+
+
+```{r}
+acs_2022_B25118_rent <- get_acs_data(year = yr, 
+                                     variables = c(income_renter$name))
+
+acs_2022_B25118_rent
+```
+
+```{r}
+acs_2022_B25118_rent_long <- acs_2022_B25118_rent %>% 
+  select(fipscode = 1, 2:3, starts_with('B25118')) %>% 
+  filter(countycode != "000") %>% 
+  select(1:3, ends_with('E')) %>% 
+  pivot_longer(cols = starts_with('B25118'), names_to = "name", values_to = 'denominator') %>% 
+  mutate(name = str_remove(name, "E")) %>% 
+  left_join(income_renter %>% 
+              select(1:2) %>% 
+              mutate(label = str_remove(label, "Estimate!!Total:!!Renter occupied:!!")),
+            by = "name"
+  )
+
+acs_2022_B25118_rent_long
+```
+
+#### save data
+```{r eval=FALSE}
+write_csv(acs_2022_B25118_owner, "../01_data/raw/acs_2022_B25118_owner.csv")
+write_csv(acs_2022_B25118_rent, "../01_data/raw/acs_2022_B25118_rent.csv")
+```
+
+### numerator, denominator
+
+```{r}
+acs_2022_v153_income_num_den <- acs_2022_B25118_owner_long %>% 
+  select(-name) %>% 
+  left_join(
+    acs_2022_B25118_rent_long %>% 
+      select(-name),
+    by = c("fipscode", "statecode", "countycode", "label")
+    ) %>% 
+  select(1:3, label, numerator, denominator) %>% 
+  # filter(is.na(numerator) | is.na(denominator)) %>% 
+  mutate(denominator = numerator + denominator) %>% 
+  mutate(grp = case_when(
+    label =='Less than $5,000'		~ 1,	
+    label =='$5,000 to $9,999'		~ 1,	
+    label =='$10,000 to $14,999'	~ 2,	
+    label =='$15,000 to $19,999'	~ 3,	
+    label =='$20,000 to $24,999'	~ 3,	
+    label =='$25,000 to $34,999'	~ 4,	
+    label =='$35,000 to $49,999'	~ 5,	
+    label =='$50,000 to $74,999'	~ 6,	
+    label =='$75,000 to $99,999'	~ 7,	
+    label =='$100,000 to $149,999'	~ 8,		
+    label =='$150,000 or more'      ~ 9,
+    TRUE ~ NA
+  ), .after = label
+  ) %>% 
+  group_by(fipscode,statecode,countycode, grp) %>% 
+  summarise(numerator = sum(numerator), denominator = sum(denominator), .groups = "drop") 
+
+acs_2022_v153_income_num_den
+```
+
+### variables: S1901
+
+S1901_C01_001	Estimate!!Households!!Total
+S1901_C02_001	Estimate!!Families!!Total
+S1901_C04_001	Estimate!!Nonfamily households!!Total
+```{r}
+test <- get_acs_data(year = yr, 
+                     variables = c('S1901_C01_001', 'S1901_C02_001', 'S1901_C04_001'))
+
+test %>% 
+  select(-ends_with("M"))
+```
+
+### hoursefold: S1901
+```{r}
+S1901_household <- v22_s %>% 
+  filter(str_detect(name, "S1901")) %>% 
+  slice(1:11)
+
+S1901_household %>% select(1:2)
+```
+
+
+```{r}
+income_household <- get_acs_data(year = yr, variables = c(S1901_household$name))
+```
+
+##### save data
+
+```{r eval=FALSE}
+write_csv(income_household, "../01_data/raw/acs_2022_S1901.csv")
+```
+
+
+#### method: Heni
+```{r eval=FALSE}
+# combine percentages S1901_C01_010E + S1901_C01_011E before calculating numbers
+acs_2022_v153_income_num_hshd <- income_household %>% 
+  select(fipscode = 1, 2:3, starts_with('S1901')) %>% 
+  filter(countycode != "000") %>% 
+  select(1:3, ends_with('E')) %>% 
+  mutate(S1901_C01_011E = S1901_C01_010E + S1901_C01_011E) %>% 
+  select(-S1901_C01_010E) %>% 
+  mutate(across(S1901_C01_002E:S1901_C01_011E, ~round(./100*S1901_C01_001E))) %>% 
+  pivot_longer(cols = starts_with('S1901'), names_to = "name", values_to = 'num_household') %>% 
+  mutate(name = str_remove(name, "E")) %>% 
+  left_join(
+    S1901_household %>% select(1:2) %>% 
+      mutate(label = str_remove(label, "Estimate!!Households!!Total!!")),
+            by = "name"
+  )%>% 
+  filter(label!="Estimate!!Households!!Total") %>% 
+  select(-name) %>% 
+  mutate(grp = case_when(
+    label =='Less than $10,000'		~ 1,	
+    label =='$10,000 to $14,999'	~ 2,	
+    label =='$15,000 to $24,999'	~ 3,	
+    label =='$25,000 to $34,999'	~ 4,	
+    label =='$35,000 to $49,999'	~ 5,	
+    label =='$50,000 to $74,999'	~ 6,	
+    label =='$75,000 to $99,999'	~ 7,	
+    label =='$100,000 to $149,999'	~ 8,		
+    label =='$150,000 to $199,999'  ~ 9,
+    label =='$200,000 or more'  ~ 9,
+    TRUE ~ NA
+  ), .after = label
+  ) %>% 
+  group_by(fipscode,statecode,countycode, grp) %>% 
+  summarise(num_household = sum(num_household, na.rm = TRUE), .groups = "drop")
+```
+
+#### method: GL
+```{r}
+acs_2022_v153_income_num_hshd <- income_household %>% 
+  select(fipscode = 1, 2:3, starts_with('S1901')) %>% 
+  filter(countycode != "000") %>% 
+  select(1:3, ends_with('E')) %>% 
+  mutate(across(S1901_C01_002E:S1901_C01_011E, ~round(./100*S1901_C01_001E))) %>% 
+  pivot_longer(cols = starts_with('S1901'), names_to = "name", values_to = 'num_household') %>% 
+  mutate(name = str_remove(name, "E")) %>% 
+  left_join(
+    S1901_household %>% select(1:2) %>% 
+      mutate(label = str_remove(label, "Estimate!!Households!!Total!!")),
+            by = "name"
+  )%>% 
+  filter(label!="Estimate!!Households!!Total") %>% 
+  select(-name) %>% 
+  mutate(grp = case_when(
+    label =='Less than $10,000'		~ 1,	
+    label =='$10,000 to $14,999'	~ 2,	
+    label =='$15,000 to $24,999'	~ 3,	
+    label =='$25,000 to $34,999'	~ 4,	
+    label =='$35,000 to $49,999'	~ 5,	
+    label =='$50,000 to $74,999'	~ 6,	
+    label =='$75,000 to $99,999'	~ 7,	
+    label =='$100,000 to $149,999'	~ 8,		
+    label =='$150,000 to $199,999'  ~ 9,
+    label =='$200,000 or more'  ~ 9,
+    TRUE ~ NA
+  ), .after = label
+  ) %>% 
+  group_by(fipscode,statecode,countycode, grp) %>% 
+  summarise(num_household = sum(num_household, na.rm = TRUE), .groups = "drop") 
+
+acs_2022_v153_income_num_hshd
+```
+
+### disparity
+
+```{r}
+v153_disparity_income <- purrr::reduce(
+  list(acs_2022_v153_income_num_hshd, acs_2022_v153_income_num_den),
+  dplyr::left_join,
+  by = c('fipscode', 'statecode', 'countycode', 'grp')
+) %>% 
+  mutate(rawvalue = numerator/denominator) %>% 
+  mutate(num_hh_wt = if_else(is.na(rawvalue), 0, num_household), .after = 'num_household') %>% 
+  mutate(num_hh_th = if_else(rawvalue>0 & !is.na(rawvalue), num_household, 0)) %>% # set num_household=0 if a tract has missing or 0 raw value, i.e, exclude a tract in weighting if it has missing or 0 raw value
+  group_by(fipscode) %>% 
+  mutate(hh_i = num_hh_wt / sum(num_hh_wt), .after = num_hh_wt) %>% 
+  mutate(rawvalue_th = if_else(rawvalue ==0|is.nan(rawvalue), NA, rawvalue)) %>% 
+  summarise(statecode = first(statecode), countycode = first(countycode),
+            num_hh = sum(num_household), 
+            num_hh_counted = sum(num_hh_wt),
+            mean = mean(rawvalue, na.rm = TRUE),
+            mean_wt = stats::weighted.mean(rawvalue, hh_i, na.rm = TRUE),
+            sd_s = sd(rawvalue, na.rm = TRUE), # sample sd
+            sd_p =  sqrt((num_hh_counted - 1)/num_hh_counted) * sd(rawvalue, na.rm = TRUE), # population SD
+            bgv = sum(hh_i * (rawvalue - mean(rawvalue, na.rm = TRUE))^2, na.rm = TRUE),
+            sd_bgv = sqrt(bgv),
+            bgv_wt = sum(hh_i * (rawvalue - weighted.mean(rawvalue, w = hh_i, na.rm = TRUE))^2, 
+                         na.rm = TRUE),
+            sd_bgv_wt = sqrt(bgv_wt),
+            num_hh_theil_counted = sum(num_hh_th, na.rm = TRUE),
+            mean_th = mean(rawvalue_th, na.rm = TRUE),
+            mean_th_wt = stats::weighted.mean(rawvalue_th, num_hh_th, na.rm = TRUE),
+            theil = theil_wtd_gl(rawvalue),
+            theil_wt = theil_wtd_gl(rawvalue, num_hh_th),
+            )
+
+v153_disparity_income
+```
+
+```{r}
+v153_disparity_income %>% 
+  filter(num_hh != num_hh_counted)
+```
+
+## compare with Heni
+v153_Theil_Inc_SN_06192024_v1
+```{r eval=FALSE}
+# v153_income_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_mean_Income_SN_06122024.xlsx")
+# v153_income_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_BGV_Income_SN_06122024.xlsx")
+# v153_income_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_mean_Inc_Theil_SN_06182024.xlsx")
+# v153_income_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_Theil_Inc_SN_06192024_v0.xlsx")
+v153_income_heni <- readxl::read_excel("../Heni_Census Tract Disparity Measurement/v153_Theil_Inc_SN_06192024_v1.xlsx")
+
+v153_income_heni
+```
+
+```{r eval=FALSE}
+v153_income_heni %>% 
+  select(1, contains("Theil"))
+```
+
+v153_Unwgt_Theil_Income 
+v153_Wgt_Theil_Income
+```{r eval=FALSE}
+compare_income <- v153_income_heni %>% 
+  # select(fipscode, mean_h = v153_mean_Income, mean_wt_h = v153_wgtmean_Income) %>%
+  # select(fipscode, pop_counted_h = pop_counted, mean_wt_h = v153_wgtmean_Race) %>%
+  # select(fipscode, bgv_h = v153_Unwgt_BGV_Income, sd_h = v153_Unwgt_SD_Income,
+         # bgv_wt_h=v153_Wgt_BGV_Income, sd_wt_h = v153_Wgt_SD_Income) %>%
+  # select(fipscode, mean_th_h = v153_unwgtmean_Income_Theil, mean_th_wt_h = v153_wgtmean_Income_Theil) %>%
+  select(fipscode, theil_h = v153_Unwgt_Theil_Income, theil_wt_h = v153_Wgt_Theil_Income) %>%
+  left_join(v153_disparity_income, 
+            by = c("fipscode"))
+
+compare_income
+```
+
+```{r eval=FALSE}
+compare_income %>% 
+  # filter(pop_sum_h != pop_tot)
+  # select(fipscode, mean_h, mean) %>% filter(!near(mean_h, mean, tol = 1e-10))
+  # select(fipscode, pop_counted_h, pop_counted) %>% filter(!near(pop_counted_h, pop_counted, tol = 1e-7))
+  # select(fipscode, mean_wt_h, mean_wt) %>% filter(!near(mean_wt_h, mean_wt, tol = 1e-5)) %>% 
+  # mutate(diff= abs(mean_wt_h-mean_wt)) %>% 
+  # summarise(mean(diff))
+  # select(fipscode, mean_wt_h, mean_wt) %>% filter(!near(mean_wt_h, mean_wt, tol = 1e-6) | (is.na(mean_wt_h) + is.na(mean_wt)==1))
+  # select(fipscode, bgv_h, bgv) %>% filter(!near(bgv_h, bgv, tol = 1e-5) | (is.na(bgv_h) + is.na(bgv)==1))
+  # select(fipscode, bgv_wt_h, bgv_wt) %>% filter(!near(bgv_wt_h,bgv_wt, tol = 1e-5) | (is.na(bgv_wt_h) + is.na(bgv_wt)==1) )
+  # select(fipscode, sd_h, sd_bgv) %>% filter(!near(sd_h, sd_bgv, tol = 1e-6) | (is.na(sd_h) + is.na(sd_bgv)==1))
+  # select(fipscode, sd_wt_h, sd_bgv_wt) %>% filter(!near(sd_wt_h, sd_bgv_wt, tol = 1e-6) | (is.na(sd_wt_h) + is.na(sd_bgv_wt)==1))
+  # select(fipscode, mean_th_h, mean_th) %>% filter(!near(mean_th_h, mean_th, tol = 1e-12) | (is.na(mean_th_h) + is.na(mean_th)==1))
+  # select(fipscode, mean_th_wt_h, mean_th_wt) %>% filter(!near(mean_th_wt_h, mean_th_wt, tol = 1e-5) | (is.na(mean_th_wt_h) + is.na(mean_th_wt)==1))
+  # select(fipscode, theil_h, theil) %>% filter(!near(theil_h, theil, tol = 1e-5) | (is.na(theil_h) + is.na(theil)==1))
+  select(fipscode, theil_wt_h, theil_wt) %>% filter(!near(theil_wt_h, theil_wt, tol = 1e-6) | (is.na(theil_wt_h) + is.na(theil_wt)==1))
+```
+
+## save data
+
+```{r eval=FALSE}
+v153_disparity_income %>% 
+  select(-c(sd_s, sd_p)) %>% 
+  write_csv("../01_data/processed/v153_disparity_income_GL.csv", na="")
+
+```
+
+
+# 3b. income levels:tracts
+
+## owner, renter by income
+
+```{r}
+income_owner
+```
+
+```{r}
+# tract level
+acs_2022_B25118_tract <- get_acs_tract_data(year = yr, 
+                                               variables = c(income_owner$name,income_renter$name))
+
+acs_2022_B25118_tract
+```
+
+### owner
+
+```{r}
+# owner
+acs_2022_B25118_tract_owner <- acs_2022_B25118_tract %>% 
+  select(1:4, contains(income_owner$name)) %>% 
+  select(1:4, ends_with("E")) %>% 
+  pivot_longer(cols = starts_with('B25118'), names_to = "name", values_to = 'numerator') %>% 
+  mutate(name = str_remove(name, "E")) %>% 
+  left_join(income_owner %>% 
+              select(1:2) %>% 
+              mutate(label = str_remove(label, "Estimate!!Total:!!Owner occupied:!!")),
+            by = "name"
+  )
+```
+
+### renter
+```{r}
+# renter
+acs_2022_B25118_tract_rent <- acs_2022_B25118_tract %>% 
+  select(1:4, contains(income_renter$name)) %>% 
+  select(1:4, ends_with("E")) %>% 
+  pivot_longer(cols = starts_with('B25118'), names_to = "name", values_to = 'denominator') %>% 
+  mutate(name = str_remove(name, "E")) %>% 
+  left_join(income_renter %>% 
+              select(1:2) %>% 
+              mutate(label = str_remove(label, "Estimate!!Total:!!Renter occupied:!!")),
+            by = "name"
+  )
+
+acs_2022_B25118_tract_rent
+```
+
+### numerator + denominator
+
+```{r}
+acs_2022_v153_income_num_den_tract <- acs_2022_B25118_tract_owner %>% 
+  select(-name) %>% 
+  left_join(acs_2022_B25118_tract_rent %>% select(-name),
+            by = c('GEOID', 'fipscode', 'statecode', 'countycode', 'label')) %>% 
+  select(1:4, label, numerator, denominator) %>% 
+  # filter(is.na(numerator) | is.na(denominator)) %>% 
+  mutate(denominator = numerator + denominator) %>% 
+  mutate(grp = case_when(
+    label =='Less than $5,000'		~ 1,	
+    label =='$5,000 to $9,999'		~ 1,	
+    label =='$10,000 to $14,999'	~ 2,	
+    label =='$15,000 to $19,999'	~ 3,	
+    label =='$20,000 to $24,999'	~ 3,	
+    label =='$25,000 to $34,999'	~ 4,	
+    label =='$35,000 to $49,999'	~ 5,	
+    label =='$50,000 to $74,999'	~ 6,	
+    label =='$75,000 to $99,999'	~ 7,	
+    label =='$100,000 to $149,999'	~ 8,		
+    label =='$150,000 or more'      ~ 9,
+    TRUE ~ NA
+  ), .after = label
+  ) %>% 
+  group_by(GEOID, fipscode,statecode,countycode, grp) %>% 
+  summarise(numerator = sum(numerator), denominator = sum(denominator), .groups = "drop") 
+
+acs_2022_v153_income_num_den_tract
+```
+
+## hoursefold: tract
+```{r}
+S1901_household <- v22_s %>% 
+  filter(str_detect(name, "S1901")) %>% 
+  slice(1:11)
+
+S1901_household %>% select(1:2)
+```
+
+
+```{r}
+acs_2022_S1901_tract <- get_acs_tract_data(year = yr, variables = c(S1901_household$name))
+
+acs_2022_S1901_tract
+```
+
+# v153 R2024
+
+```{r}
+v153_r2025 <- get_acs_data(year = yr, variables = c('B25003_001', 'B25003_002'))
+
+v153_r2025_2 <- v153_r2025 %>% 
+  filter(countycode != "000") %>% 
+  select(fipscode = 1, 2:3, starts_with("B25003") ) %>% 
+  rename(numerator = B25003_002E, 
+         denominator = B25003_001E) %>% 
+  mutate(rawvalue = numerator/denominator,
+         se_num_square = B25003_002M**2,
+         se_denom_square = B25003_001M**2) %>% 
+  mutate(se_num = (sqrt(se_num_square))*1.96/1.645,
+         se_denom = (sqrt(se_denom_square))*1.96/1.645) %>% 
+  mutate(se_test = se_num^2 - (rawvalue^2 * se_denom^2)) %>% 
+  mutate(se_pct = case_when(
+    se_test>=0 ~ sqrt(se_num**2 - (rawvalue^2 * se_denom^2))/denominator,
+    se_test< 0 ~ sqrt(se_num**2 + (rawvalue^2 * se_denom^2))/denominator
+  )) %>% 
+  mutate(cilow = rawvalue - se_pct, 
+         cihigh = rawvalue + se_pct,
+         sourceflag = NA_real_)%>% 
+  select(c(1:3, denominator,numerator,rawvalue,cilow,cihigh))
+
+v153_r2025_2 
+```
+
+```{r}
+v153_r2025_2 %>% 
+  filter(countycode!= "000", statecode == "55") %>% 
+  ggplot(aes(fipscode, rawvalue)) +
+  geom_line(group = 1) +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(title = "v153 - WI")
+
+```
+
+
+
+```{r}
+# mean_wt
+plotly::ggplotly(
+  v153_disparity_TractRaceTandR %>% 
+  filter(str_detect(fipscode, "^55")) %>% 
+  select(1, mean_wt_Tract, mean_wt_Race, mean_wt_RandT) %>% 
+  pivot_longer(cols = c(2:4), names_to = "var", values_to = "mean_wt") %>% 
+  ggplot(aes(fipscode, mean_wt, group = var, color = var)) +
+  geom_line() +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(title = "weighted mean - WI")
+)
+```
+
+## compare v153 with weighted means
+```{r}
+ggplotly(
+  v153_r2025_2 %>% 
+  filter(countycode!= "000", statecode == "55") %>% 
+  select(fipscode, v153 = rawvalue) %>% 
+  left_join(
+    v153_disparity_TractRaceTandR %>% 
+      filter(str_detect(fipscode, "^55")) %>% 
+      select(1, mean_wt_Tract, mean_wt_Race, mean_wt_RandT),
+    by = "fipscode"
+  ) %>% 
+  pivot_longer(cols = c(2:5), names_to = "var", values_to = "mean_wt") %>% 
+  ggplot(aes(fipscode, mean_wt, group = var, color = var)) +
+  geom_line() +
+  geom_point() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  labs(title = "WI")
+)
+
+```
+
+# -------------
