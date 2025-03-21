@@ -1,6 +1,6 @@
 ---
 title: "descriptives"
-format: html
+format: pdf
 execute:
   echo: false      # This hides the code from being printed
   warning: false   # This suppresses warnings
@@ -286,6 +286,22 @@ pheatmap(cor_matrix,
 
 ```
 
+The strongest correlation occurs between tract and income, weakest between tract and race. All correlations are significant.
+
+```{r}
+# Example: Calculate Spearman's correlation
+race_inc <- cor.test(hist_data$race_cis_sd_bgv_wt, hist_data$income_cis_sd_bgv_wt, method = "spearman")
+
+tract_inc <- cor.test(hist_data$tract_cis_sd_bgv_wt, hist_data$income_cis_sd_bgv_wt, method = "spearman")
+
+tract_race <- cor.test(hist_data$tract_cis_sd_bgv_wt, hist_data$race_cis_sd_bgv_wt, method = "spearman")
+
+race_inc
+tract_inc
+tract_race
+
+```
+
 #### ALL data 
 
 ```{r}
@@ -389,6 +405,8 @@ The magnitude of the median BGV value is highest among urban to suburban (codes 
 
 The magnitude of the median BGV value is lowest among urban counties (codes 1, 2, 3) across racial groups. Median BGV values are also relatively low for rural (codes 8 and 9) counties across census tracts.
 
+NEED TO CHECK DENOMINATORS OF PERCENT MISSINGS
+
 ```{r}
 # Load necessary libraries
 library(dplyr)
@@ -473,4 +491,261 @@ missing_by_rucc %>%
     label = "Summary Statistics (Median, Min, Max)",
     columns = vars(race_summary, income_summary, tract_summary)
   )
+```
+
+### Only two RUCC groups 
+
+Split is here: <https://www.ers.usda.gov/data-products/rural-urban-continuum-codes/documentation#:~:text=For%20Rural%2DUrban%20Continuum%20Codes,below%20250%2C000%20(code%203).>
+
+THE TABLES BELOW ARE A MESS - NEED TO CHECK DENOMINATORS OF THE PERCENT MISSINGS
+
+```{r}
+missing_by_rucc <- hist_data %>%
+  mutate(
+    RUCC_group = case_when(
+      RUCC_2023 %in% c(1, 2, 3) ~ "Urban",
+      RUCC_2023 %in% c(4, 5, 6, 7, 8, 9) ~ "Rural",
+      TRUE ~ NA_character_  # Handle any unexpected RUCC codes
+    )
+  ) %>%
+  group_by(RUCC_group) %>%
+  summarise(
+    # Missing counts for each variable
+    race_missing = sum(is.na(race_cis_sd_bgv_wt)),
+    income_missing = sum(is.na(income_cis_sd_bgv_wt)),
+    tract_missing = sum(is.na(tract_cis_sd_bgv_wt)),
+    
+    # Median, min, and max for race, income, and tract
+    race_median = round(median(race_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    race_min = round(min(race_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    race_max = round(max(race_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    
+    income_median = round(median(income_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    income_min = round(min(income_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    income_max = round(max(income_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    
+    tract_median = round(median(tract_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    tract_min = round(min(tract_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    tract_max = round(max(tract_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    
+    .groups = "drop"
+  ) %>%
+  mutate(
+    total_count = nrow(venn_data),
+    # Calculate the percentage of missing data
+    race_percent_missing = (race_missing / nrow(hist_data)) * 100,
+    income_percent_missing = (income_missing / nrow(hist_data)) * 100,
+    tract_percent_missing = (tract_missing / nrow(hist_data)) * 100,
+    
+    # Combine median, min, and max for each variable in the desired format
+    race_summary = paste(race_median, "(", race_min, ",", race_max, ")", sep = ""),
+    income_summary = paste(income_median, "(", income_min, ",", income_max, ")", sep = ""),
+    tract_summary = paste(tract_median, "(", tract_min, ",", tract_max, ")", sep = "")
+  ) %>%
+  select(
+    RUCC_group,
+    # Grouped by Race, Income, Tract
+    race_missing, race_percent_missing, race_summary,
+    income_missing, income_percent_missing, income_summary,
+    tract_missing, tract_percent_missing, tract_summary
+  )
+
+# Create the table using gt
+missing_by_rucc %>%
+  gt() %>%
+  tab_header(
+    title = "Missing Data and Summary Statistics by Urban/Rural Category"
+  ) %>%
+  cols_label(
+    RUCC_group = "Urban/Rural Category",
+    race_missing = "Race Missing Count",
+    race_percent_missing = "Race Percent Missing",
+    income_missing = "Income Missing Count",
+    income_percent_missing = "Income Percent Missing",
+    tract_missing = "Tract Missing Count",
+    tract_percent_missing = "Tract Percent Missing",
+    race_summary = "Race (Median, Min, Max)",
+    income_summary = "Income (Median, Min, Max)",
+    tract_summary = "Tract (Median, Min, Max)"
+  ) %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "black", weight = px(2)),
+    locations = cells_body()
+  ) %>%
+  tab_options(
+    table.width = pct(90),
+    column_labels.font.size = 14,
+    table.border.top.color = "black",
+    table.border.bottom.color = "black"
+  ) %>%
+  tab_spanner(
+    label = "Missing Counts and Percentages",
+    columns = vars(race_missing, race_percent_missing, income_missing, income_percent_missing, tract_missing, tract_percent_missing)
+  ) %>%
+  tab_spanner(
+    label = "Summary Statistics (Median, Min, Max)",
+    columns = vars(race_summary, income_summary, tract_summary)
+  )
+```
+
+```{r}
+# Load necessary libraries
+library(dplyr)
+library(gt)
+
+# Create the dataset with missing counts, percentages, and summary statistics (median, min, max)
+ruccgroups <- hist_data %>%
+  mutate(
+    RUCC_group = case_when(
+      RUCC_2023 %in% c(1, 2, 3) ~ "Urban",
+      RUCC_2023 %in% c(4, 5, 6, 7, 8, 9) ~ "Rural",
+      TRUE ~ NA_character_  # Handle any unexpected RUCC codes
+    )
+  )
+
+missing_by_rucc = ruccgroups %>%
+  group_by(RUCC_group) %>%
+  summarise(
+    # Missing counts for each variable
+    race_missing = sum(is.na(race_cis_sd_bgv_wt)),
+    income_missing = sum(is.na(income_cis_sd_bgv_wt)),
+    tract_missing = sum(is.na(tract_cis_sd_bgv_wt)),
+    
+    # Median, min, and max for race, income, and tract
+    race_median = round(median(race_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    race_min = round(min(race_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    race_max = round(max(race_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    
+    income_median = round(median(income_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    income_min = round(min(income_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    income_max = round(max(income_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    
+    tract_median = round(median(tract_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    tract_min = round(min(tract_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    tract_max = round(max(tract_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    
+    .groups = "drop"
+  ) %>% ungroup() %>% 
+  select(
+    RUCC_group,
+    race_missing, race_percent_missing, race_summary,
+    income_missing, income_percent_missing, income_summary,
+    tract_missing, tract_percent_missing, tract_summary
+  )
+
+overall = hist_data %>% 
+  summarise(
+    # Missing counts for each variable
+    race_missing = sum(is.na(race_cis_sd_bgv_wt)),
+    income_missing = sum(is.na(income_cis_sd_bgv_wt)),
+    tract_missing = sum(is.na(tract_cis_sd_bgv_wt)),
+    
+    # Median, min, and max for race, income, and tract
+    race_median = round(median(race_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    race_min = round(min(race_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    race_max = round(max(race_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    
+    income_median = round(median(income_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    income_min = round(min(income_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    income_max = round(max(income_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    
+    tract_median = round(median(tract_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    tract_min = round(min(tract_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    tract_max = round(max(tract_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    
+  ) %>%
+  mutate(RUCC_group = "Overall") %>% 
+select(
+    RUCC_group,
+    race_missing, race_percent_missing, race_summary,
+    income_missing, income_percent_missing, income_summary,
+    tract_missing, tract_percent_missing, tract_summary
+  )
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Add the overall (total) row
+overall_row <- tibble(
+  RUCC_group = "Overall",
+  race_missing = sum(missing_by_rucc$race_missing),
+  race_percent_missing = (sum(missing_by_rucc$race_missing) / nrow(hist_data)) * 100,
+  race_summary = paste(
+    round(median(hist_data$race_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    "(", round(min(hist_data$race_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    ",", round(max(hist_data$race_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    ")"
+  ),
+  
+  income_missing = sum(missing_by_rucc$income_missing),
+  income_percent_missing = (sum(missing_by_rucc$income_missing) / nrow(hist_data)) * 100,
+  income_summary = paste(
+    round(median(hist_data$income_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    "(", round(min(hist_data$income_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    ",", round(max(hist_data$income_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    ")"
+  ),
+  
+  tract_missing = sum(missing_by_rucc$tract_missing),
+  tract_percent_missing = (sum(missing_by_rucc$tract_missing) / nrow(hist_data)) * 100,
+  tract_summary = paste(
+    round(median(hist_data$tract_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    "(", round(min(hist_data$tract_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    ",", round(max(hist_data$tract_cis_sd_bgv_wt, na.rm = TRUE), 2),
+    ")"
+  )
+)
+
+# Combine the overall row with the rest of the data
+missing_by_rucc <- bind_rows(missing_by_rucc, overall_row)
+
+# Create the table using gt
+missing_by_rucc %>%
+  gt() %>%
+  tab_header(
+    title = "Missing Data and Summary Statistics by Urban/Rural Category"
+  ) %>%
+  cols_label(
+    RUCC_group = "Urban/Rural Category",
+    race_missing = "Race Missing Count",
+    race_percent_missing = "Race Percent Missing",
+    income_missing = "Income Missing Count",
+    income_percent_missing = "Income Percent Missing",
+    tract_missing = "Tract Missing Count",
+    tract_percent_missing = "Tract Percent Missing",
+    race_summary = "Race (Median, Min, Max)",
+    income_summary = "Income (Median, Min, Max)",
+    tract_summary = "Tract (Median, Min, Max)"
+  ) %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "black", weight = px(2)),
+    locations = cells_body()
+  ) %>%
+  tab_options(
+    table.width = pct(90),
+    column_labels.font.size = 14,
+    table.border.top.color = "black",
+    table.border.bottom.color = "black"
+  ) %>%
+  tab_spanner(
+    label = "Missing Counts and Percentages",
+    columns = vars(race_missing, race_percent_missing, income_missing, income_percent_missing, tract_missing, tract_percent_missing)
+  ) %>%
+  tab_spanner(
+    label = "Summary Statistics (Median, Min, Max)",
+    columns = vars(race_summary, income_summary, tract_summary)
+  )
+
 ```
