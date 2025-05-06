@@ -47,9 +47,7 @@ all <- tract %>%
 
 ```
 
-## Maps 
-
-```{r}
+```{r get the mapping function ready}
 library(tigris)
 library(ggplot2)
 library(dplyr)
@@ -99,22 +97,22 @@ plot_map <- function(column, title, legend = TRUE) {
 
 ```
 
-## Maps with unstable estimates removed 
+## Maps with unstable estimates removed
 
 The coasts (California and New England) appear to have high tract and income disparities but possibly lower race disparities. Perhaps we should do some regional and/or state-level exploration.
 
 ```{r}
 # Plot each map
-plot_tract <- plot_map("tract_cis_sd_bgv_wt", "BGV across Tracts", legend = FALSE)
-plot_income <- plot_map("income_cis_sd_bgv_wt", "BGV across Income", legend = FALSE)
-plot_race_wlegend <- plot_map("race_cis_sd_bgv_wt", "BGV across Race/Ethnicities")
+plot_tract <- plot_map("tract_cis_sd_bgv_wt", "SD across Tracts", legend = FALSE)
+plot_income <- plot_map("income_cis_sd_bgv_wt", "SD across Income", legend = FALSE)
+plot_race_wlegend <- plot_map("race_cis_sd_bgv_wt", "SD across Race/Ethnicities")
 
 plot_tract
 plot_income
 plot_race_wlegend
 ```
 
-## Histograms of SD for Race, Income, Tract 
+## Histograms of SD for Race, Income, Tract
 
 ```{r histograms for urb cats}
 
@@ -233,7 +231,168 @@ tract_race
 
 ```
 
-## Missingness 
+## State-level rhos 
+
+```{r state level rho calcs }
+library(dplyr)
+library(purrr)
+
+# Updated function to safely calculate Spearman's rho
+get_spearman_rho <- function(x, y) {
+  if (length(na.omit(x)) < 2 || length(na.omit(y)) < 2) {
+    return(NA)  # Not enough data to compute correlation
+  }
+  cor.test(x, y, method = "spearman")$estimate
+}
+
+# Calculate Spearman's rho per state
+rho_by_state <- hist_data %>%
+  group_by(State) %>%
+  summarise(
+    race_inc_rho = get_spearman_rho(race_cis_sd_bgv_wt, income_cis_sd_bgv_wt),
+    tract_inc_rho = get_spearman_rho(tract_cis_sd_bgv_wt, income_cis_sd_bgv_wt),
+    tract_race_rho = get_spearman_rho(tract_cis_sd_bgv_wt, race_cis_sd_bgv_wt)
+  )
+
+```
+
+```{r state level map function }
+library(ggplot2)
+library(maps)
+
+# Load US states map
+states_map <- map_data("state")
+
+# Convert statecode to lowercase full names (you may need a lookup table here)
+# This assumes statecode is a standard two-letter code
+library(tibble)
+
+state_lookup <- tibble::tibble(
+  State = state.abb,
+  statename = tolower(state.name)
+)
+
+# Join rho data with full state names
+rho_by_state_map <- rho_by_state %>%
+  left_join(state_lookup, by = "State") %>%
+  filter(!is.na(statename)) # Remove states not matched
+
+```
+
+```{r maps themselves }
+# Merge with map data
+plot_data <- states_map %>%
+  left_join(rho_by_state_map, by = c("region" = "statename"))
+
+# Define a plotting function
+plot_rho_map <- function(data, fill_col, title) {
+  ggplot(data, aes(x = long, y = lat, group = group, fill = .data[[fill_col]])) +
+    geom_polygon(color = "white") +
+    coord_fixed(1.3) +
+    scale_fill_viridis_c(option = "plasma", na.value = "gray90") +
+    labs(title = title, fill = "Spearman's ρ") +
+    theme_minimal()
+}
+
+# Create each map
+map_race_inc <- plot_rho_map(plot_data, "race_inc_rho", "Race vs. Income Correlation by State")
+map_tract_inc <- plot_rho_map(plot_data, "tract_inc_rho", "Tract vs. Income Correlation by State")
+map_tract_race <- plot_rho_map(plot_data, "tract_race_rho", "Tract vs. Race Correlation by State")
+
+# Display the maps
+print(map_race_inc)
+print(map_tract_inc)
+print(map_tract_race)
+
+```
+
+## State-level SD 
+
+```{r Calculate the median for each state}
+
+median_by_state <- hist_data %>%
+  group_by(State) %>%
+  summarise(
+    median_tract = median(tract_cis_sd_bgv_wt, na.rm = TRUE),
+    median_race = median(race_cis_sd_bgv_wt, na.rm = TRUE),
+    median_income = median(income_cis_sd_bgv_wt, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+
+
+
+# Merge the median values with state names
+median_by_state_map <- median_by_state %>%
+  left_join(state_lookup, by = "State") %>%
+  filter(!is.na(statename))  # Remove unmatched states
+
+
+```
+
+```{r make the map and print top 3 below}
+library(ggplot2)
+library(dplyr)
+
+# Merge the state-level median values with the map data
+plot_data <- states_map %>%
+  left_join(median_by_state_map, by = c("region" = "statename"))
+
+# Function to get the states with the highest median values
+get_top_states <- function(data, fill_col, top_n = 3) {
+  data %>%
+    group_by(region) %>%
+    summarise(top_value = max(.data[[fill_col]], na.rm = TRUE)) %>%
+    arrange(desc(top_value)) %>%
+    head(top_n) %>%
+    pull(region)
+}
+
+# Function to plot the map and annotate the top states
+plot_median_map <- function(data, fill_col, title, top_states) {
+  ggplot(data, aes(x = long, y = lat, group = group, fill = .data[[fill_col]])) +
+    geom_polygon(color = "white") +
+    coord_fixed(1.3) +
+    scale_fill_viridis_c(option = "plasma", na.value = "gray90") +
+    labs(title = title, fill = "Median Value") +
+    theme_minimal() +
+    annotate("text", x = -125, y = 25, label = paste("Top States: ", paste(top_states, collapse = ", ")), 
+             size = 5, color = "black", hjust = 0, vjust = 0)
+}
+
+# Get the top 5 states for each variable
+top_states_tract <- get_top_states(plot_data, "median_tract")
+top_states_race <- get_top_states(plot_data, "median_race")
+top_states_income <- get_top_states(plot_data, "median_income")
+
+# Create the maps for each variable
+map_median_tract <- plot_median_map(plot_data, "median_tract", "Median Tract Disparity by State", top_states_tract)
+map_median_race <- plot_median_map(plot_data, "median_race", "Median Race Disparity by State", top_states_race)
+map_median_income <- plot_median_map(plot_data, "median_income", "Median Income Disparity by State", top_states_income)
+
+# Display the maps
+print(map_median_tract)
+print(map_median_race)
+print(map_median_income)
+
+```
+
+## States where tract disparities are greater than income disparities 
+
+```{r}
+median_by_state %>% filter(median_income < median_tract)
+
+
+
+```
+
+## States where race disparities are greater than income disparities
+
+```{r}
+median_by_state %>% filter(median_income < median_race)
+```
+
+## Missingness
 
 ```{r venn diagram}
 
@@ -298,7 +457,7 @@ missing_counts %>%
 
 ```
 
-### Summary stats with two RUCC groups 
+### Summary stats with two RUCC groups
 
 Split is here: <https://www.ers.usda.gov/data-products/rural-urban-continuum-codes/documentation#:~:text=For%20Rural%2DUrban%20Continuum%20Codes,below%20250%2C000%20(code%203).>
 

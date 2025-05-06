@@ -68,6 +68,8 @@ bayesian credible intervals provide direct probabilistic statements about parame
 
 Georgiana Bostean, Luis Sanchez, Adam M. Lippert
 
+FROM HENI CENSUS TRACT DISPARITY LITERATURE 
+
 vape stores within a single county 
 
 23.4% of CTs had at least 1 vape store; more prevalent in areas w higher percentage of hisp residents, lower pop density, and more tobacco retailer density 
@@ -100,11 +102,7 @@ higher vape store incidence rates in CTs w higher hisp pop, greater tobacco reta
 
 ## Association of Census Tract-Level Socioeconomic Status with Disparities in Prostate Cancer–Specific Survival Vincent L. Freeman1,2,5, Ana C. Ricardo3 , Richard T. Campbell1 , Richard E. Barrett2,4, and Richard B. Warnecke2 <https://doi.org/10.1158/1055-9965.epi-11-0344>
 
-From Heni's folder 
-
-Association of Census Tract-Level Socioeconomic Status with Disparities in Prostate Cancer–Specific Survival Vincent L. Freeman1,2,5, Ana C. Ricardo3 , Richard T. Campbell1 , Richard E. Barrett2,4, and Richard B. Warnecke2\
-\
-<https://doi.org/10.1158/1055-9965.epi-11-0344>
+FROM HENI CENSUS TRACT DISPARITY LITERATURE 
 
 is CT SES associated w survival of prostate cancer?? 
 
@@ -152,13 +150,9 @@ CD is predictive of health outcomes, including self rated heatlh and asthma 
 
 ## Census Tract Poverty and Racial Disparities in HIV Rates in Milwaukee County, Wisconsin, 2009–2014
 
-From Heni's folder
+FROM HENI CENSUS TRACT DISPARITY LITERATURE 
 
-Crystal Gibson1,2  · Katarina Grande3
-
- · Casey Schumann3
-
- · Mari Gasiorowicz
+Crystal Gibson, Katarina Grande, Casey Schumann, Mari Gasiorowicz
 
 <https://link.springer.com/article/10.1007/s10461-018-2064-y>\
 \
@@ -212,13 +206,13 @@ individual data nested within census tract level data
 
 could we use similar logic where we have county-level race/income disparities and tract level raw values? then we could form conclusions like "every 10percent increase in countylevel income disparity is associated with a xxx change in tract level housing" is that meaningful?? we can then determine that county-level income or race disparities are associated with XXX census tract characteristics
 
-## Associations between disparities in tobacco retailer density and disparities
-
-in tobacco use
+## Associations between disparities in tobacco retailer density and disparities in tobacco use
 
 Allison M. Glasser,\* Nathaniel Onnen, Peter F. Craigmile, Elli Schwartz, Megan E. Roberts
 
 <https://doi.org/10.1016/j.ypmed.2021.106910>
+
+FROM HENI CENSUS TRACT DISPARITY LITERATURE
 
 focused on ohio
 

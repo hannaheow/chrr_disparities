@@ -62,9 +62,6 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="maps" class="level2">
-<h2 class="anchored" data-anchor-id="maps">Maps</h2>
-</section>
 <section id="maps-with-unstable-estimates-removed" class="level2">
 <h2 class="anchored" data-anchor-id="maps-with-unstable-estimates-removed">Maps with unstable estimates removed</h2>
 <p>The coasts (California and New England) appear to have high tract and income disparities but possibly lower race disparities. Perhaps we should do some regional and/or state-level exploration.</p>
@@ -72,21 +69,21 @@ ul.task-list li input[type="checkbox"] {
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="descriptives_sd_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="descriptives_sd_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="descriptives_sd_files/figure-html/unnamed-chunk-2-2.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="descriptives_sd_files/figure-html/unnamed-chunk-1-2.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
-<p><img src="descriptives_sd_files/figure-html/unnamed-chunk-2-3.png" class="img-fluid figure-img" width="672"></p>
+<p><img src="descriptives_sd_files/figure-html/unnamed-chunk-1-3.png" class="img-fluid figure-img" width="672"></p>
 </figure>
 </div>
 </div>
@@ -167,6 +164,92 @@ sample estimates:
 </div>
 </div>
 </section>
+<section id="state-level-rhos" class="level2">
+<h2 class="anchored" data-anchor-id="state-level-rhos">State-level rhos</h2>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="descriptives_sd_files/figure-html/maps%20themselves-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="descriptives_sd_files/figure-html/maps%20themselves-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="descriptives_sd_files/figure-html/maps%20themselves-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="state-level-sd" class="level2">
+<h2 class="anchored" data-anchor-id="state-level-sd">State-level SD</h2>
+<div class="cell">
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="descriptives_sd_files/figure-html/make%20the%20map%20and%20print%20top%203%20below-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="descriptives_sd_files/figure-html/make%20the%20map%20and%20print%20top%203%20below-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="descriptives_sd_files/figure-html/make%20the%20map%20and%20print%20top%203%20below-3.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="states-where-tract-disparities-are-greater-than-income-disparities" class="level2">
+<h2 class="anchored" data-anchor-id="states-where-tract-disparities-are-greater-than-income-disparities">States where tract disparities are greater than income disparities</h2>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 4 × 4
+  State median_tract median_race median_income
+  &lt;chr&gt;        &lt;dbl&gt;       &lt;dbl&gt;         &lt;dbl&gt;
+1 AZ          0.0989      0.0728        0.0827
+2 DE          0.142       0.124         0.137 
+3 FL          0.120       0.102         0.0985
+4 NV          0.114       0.0783        0.108 </code></pre>
+</div>
+</div>
+</section>
+<section id="states-where-race-disparities-are-greater-than-income-disparities" class="level2">
+<h2 class="anchored" data-anchor-id="states-where-race-disparities-are-greater-than-income-disparities">States where race disparities are greater than income disparities</h2>
+<div class="cell">
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 10 × 4
+   State median_tract median_race median_income
+   &lt;chr&gt;        &lt;dbl&gt;       &lt;dbl&gt;         &lt;dbl&gt;
+ 1 AR          0.0874      0.106         0.105 
+ 2 FL          0.120       0.102         0.0985
+ 3 GA          0.0828      0.111         0.101 
+ 4 KY          0.0707      0.100         0.0989
+ 5 LA          0.0976      0.130         0.110 
+ 6 MS          0.0796      0.116         0.0960
+ 7 ND          0.0837      0.138         0.105 
+ 8 NE          0.0517      0.0872        0.0857
+ 9 SC          0.0899      0.113         0.111 
+10 SD          0.0699      0.117         0.107 </code></pre>
+</div>
+</div>
+</section>
 <section id="missingness" class="level2">
 <h2 class="anchored" data-anchor-id="missingness">Missingness</h2>
 <div class="cell">
@@ -180,23 +263,23 @@ sample estimates:
 </div>
 <div class="cell">
 <div class="cell-output-display">
-<div id="lffsziuyjp" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#lffsziuyjp table {
+<div id="ogtmbcucdd" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ogtmbcucdd table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#lffsziuyjp thead, #lffsziuyjp tbody, #lffsziuyjp tfoot, #lffsziuyjp tr, #lffsziuyjp td, #lffsziuyjp th {
+#ogtmbcucdd thead, #ogtmbcucdd tbody, #ogtmbcucdd tfoot, #ogtmbcucdd tr, #ogtmbcucdd td, #ogtmbcucdd th {
   border-style: none;
 }
 
-#lffsziuyjp p {
+#ogtmbcucdd p {
   margin: 0;
   padding: 0;
 }
 
-#lffsziuyjp .gt_table {
+#ogtmbcucdd .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -222,12 +305,12 @@ sample estimates:
   border-left-color: #D3D3D3;
 }
 
-#lffsziuyjp .gt_caption {
+#ogtmbcucdd .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#lffsziuyjp .gt_title {
+#ogtmbcucdd .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -239,7 +322,7 @@ sample estimates:
   border-bottom-width: 0;
 }
 
-#lffsziuyjp .gt_subtitle {
+#ogtmbcucdd .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -251,7 +334,7 @@ sample estimates:
   border-top-width: 0;
 }
 
-#lffsziuyjp .gt_heading {
+#ogtmbcucdd .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -263,13 +346,13 @@ sample estimates:
   border-right-color: #D3D3D3;
 }
 
-#lffsziuyjp .gt_bottom_border {
+#ogtmbcucdd .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#lffsziuyjp .gt_col_headings {
+#ogtmbcucdd .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -284,7 +367,7 @@ sample estimates:
   border-right-color: #D3D3D3;
 }
 
-#lffsziuyjp .gt_col_heading {
+#ogtmbcucdd .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 14px;
@@ -304,7 +387,7 @@ sample estimates:
   overflow-x: hidden;
 }
 
-#lffsziuyjp .gt_column_spanner_outer {
+#ogtmbcucdd .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 14px;
@@ -316,15 +399,15 @@ sample estimates:
   padding-right: 4px;
 }
 
-#lffsziuyjp .gt_column_spanner_outer:first-child {
+#ogtmbcucdd .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#lffsziuyjp .gt_column_spanner_outer:last-child {
+#ogtmbcucdd .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#lffsziuyjp .gt_column_spanner {
+#ogtmbcucdd .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -336,11 +419,11 @@ sample estimates:
   width: 100%;
 }
 
-#lffsziuyjp .gt_spanner_row {
+#ogtmbcucdd .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#lffsziuyjp .gt_group_heading {
+#ogtmbcucdd .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -366,7 +449,7 @@ sample estimates:
   text-align: left;
 }
 
-#lffsziuyjp .gt_empty_group_heading {
+#ogtmbcucdd .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -381,15 +464,15 @@ sample estimates:
   vertical-align: middle;
 }
 
-#lffsziuyjp .gt_from_md > :first-child {
+#ogtmbcucdd .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#lffsziuyjp .gt_from_md > :last-child {
+#ogtmbcucdd .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#lffsziuyjp .gt_row {
+#ogtmbcucdd .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -408,7 +491,7 @@ sample estimates:
   overflow-x: hidden;
 }
 
-#lffsziuyjp .gt_stub {
+#ogtmbcucdd .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -421,7 +504,7 @@ sample estimates:
   padding-right: 5px;
 }
 
-#lffsziuyjp .gt_stub_row_group {
+#ogtmbcucdd .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -435,15 +518,15 @@ sample estimates:
   vertical-align: top;
 }
 
-#lffsziuyjp .gt_row_group_first td {
+#ogtmbcucdd .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#lffsziuyjp .gt_row_group_first th {
+#ogtmbcucdd .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#lffsziuyjp .gt_summary_row {
+#ogtmbcucdd .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -453,16 +536,16 @@ sample estimates:
   padding-right: 5px;
 }
 
-#lffsziuyjp .gt_first_summary_row {
+#ogtmbcucdd .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#lffsziuyjp .gt_first_summary_row.thick {
+#ogtmbcucdd .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#lffsziuyjp .gt_last_summary_row {
+#ogtmbcucdd .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -472,7 +555,7 @@ sample estimates:
   border-bottom-color: #D3D3D3;
 }
 
-#lffsziuyjp .gt_grand_summary_row {
+#ogtmbcucdd .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -482,7 +565,7 @@ sample estimates:
   padding-right: 5px;
 }
 
-#lffsziuyjp .gt_first_grand_summary_row {
+#ogtmbcucdd .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -492,7 +575,7 @@ sample estimates:
   border-top-color: #D3D3D3;
 }
 
-#lffsziuyjp .gt_last_grand_summary_row_top {
+#ogtmbcucdd .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -502,11 +585,11 @@ sample estimates:
   border-bottom-color: #D3D3D3;
 }
 
-#lffsziuyjp .gt_striped {
+#ogtmbcucdd .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#lffsziuyjp .gt_table_body {
+#ogtmbcucdd .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -515,7 +598,7 @@ sample estimates:
   border-bottom-color: #D3D3D3;
 }
 
-#lffsziuyjp .gt_footnotes {
+#ogtmbcucdd .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -529,7 +612,7 @@ sample estimates:
   border-right-color: #D3D3D3;
 }
 
-#lffsziuyjp .gt_footnote {
+#ogtmbcucdd .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -538,7 +621,7 @@ sample estimates:
   padding-right: 5px;
 }
 
-#lffsziuyjp .gt_sourcenotes {
+#ogtmbcucdd .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -552,7 +635,7 @@ sample estimates:
   border-right-color: #D3D3D3;
 }
 
-#lffsziuyjp .gt_sourcenote {
+#ogtmbcucdd .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -560,72 +643,72 @@ sample estimates:
   padding-right: 5px;
 }
 
-#lffsziuyjp .gt_left {
+#ogtmbcucdd .gt_left {
   text-align: left;
 }
 
-#lffsziuyjp .gt_center {
+#ogtmbcucdd .gt_center {
   text-align: center;
 }
 
-#lffsziuyjp .gt_right {
+#ogtmbcucdd .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#lffsziuyjp .gt_font_normal {
+#ogtmbcucdd .gt_font_normal {
   font-weight: normal;
 }
 
-#lffsziuyjp .gt_font_bold {
+#ogtmbcucdd .gt_font_bold {
   font-weight: bold;
 }
 
-#lffsziuyjp .gt_font_italic {
+#ogtmbcucdd .gt_font_italic {
   font-style: italic;
 }
 
-#lffsziuyjp .gt_super {
+#ogtmbcucdd .gt_super {
   font-size: 65%;
 }
 
-#lffsziuyjp .gt_footnote_marks {
+#ogtmbcucdd .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#lffsziuyjp .gt_asterisk {
+#ogtmbcucdd .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#lffsziuyjp .gt_indent_1 {
+#ogtmbcucdd .gt_indent_1 {
   text-indent: 5px;
 }
 
-#lffsziuyjp .gt_indent_2 {
+#ogtmbcucdd .gt_indent_2 {
   text-indent: 10px;
 }
 
-#lffsziuyjp .gt_indent_3 {
+#ogtmbcucdd .gt_indent_3 {
   text-indent: 15px;
 }
 
-#lffsziuyjp .gt_indent_4 {
+#ogtmbcucdd .gt_indent_4 {
   text-indent: 20px;
 }
 
-#lffsziuyjp .gt_indent_5 {
+#ogtmbcucdd .gt_indent_5 {
   text-indent: 25px;
 }
 
-#lffsziuyjp .katex-display {
+#ogtmbcucdd .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#lffsziuyjp div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#ogtmbcucdd div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -668,23 +751,23 @@ sample estimates:
 <p>Split is here: <a href="https://www.ers.usda.gov/data-products/rural-urban-continuum-codes/documentation#:~:text=For%20Rural%2DUrban%20Continuum%20Codes,below%20250%2C000%20(code%203)." class="uri">https://www.ers.usda.gov/data-products/rural-urban-continuum-codes/documentation#:~:text=For%20Rural%2DUrban%20Continuum%20Codes,below%20250%2C000%20(code%203).</a></p>
 <div class="cell">
 <div class="cell-output-display">
-<div id="gyzdwbxjmz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#gyzdwbxjmz table {
+<div id="ahmfcqtetq" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#ahmfcqtetq table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#gyzdwbxjmz thead, #gyzdwbxjmz tbody, #gyzdwbxjmz tfoot, #gyzdwbxjmz tr, #gyzdwbxjmz td, #gyzdwbxjmz th {
+#ahmfcqtetq thead, #ahmfcqtetq tbody, #ahmfcqtetq tfoot, #ahmfcqtetq tr, #ahmfcqtetq td, #ahmfcqtetq th {
   border-style: none;
 }
 
-#gyzdwbxjmz p {
+#ahmfcqtetq p {
   margin: 0;
   padding: 0;
 }
 
-#gyzdwbxjmz .gt_table {
+#ahmfcqtetq .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -710,12 +793,12 @@ sample estimates:
   border-left-color: #D3D3D3;
 }
 
-#gyzdwbxjmz .gt_caption {
+#ahmfcqtetq .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#gyzdwbxjmz .gt_title {
+#ahmfcqtetq .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -727,7 +810,7 @@ sample estimates:
   border-bottom-width: 0;
 }
 
-#gyzdwbxjmz .gt_subtitle {
+#ahmfcqtetq .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -739,7 +822,7 @@ sample estimates:
   border-top-width: 0;
 }
 
-#gyzdwbxjmz .gt_heading {
+#ahmfcqtetq .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -751,13 +834,13 @@ sample estimates:
   border-right-color: #D3D3D3;
 }
 
-#gyzdwbxjmz .gt_bottom_border {
+#ahmfcqtetq .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#gyzdwbxjmz .gt_col_headings {
+#ahmfcqtetq .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -772,7 +855,7 @@ sample estimates:
   border-right-color: #D3D3D3;
 }
 
-#gyzdwbxjmz .gt_col_heading {
+#ahmfcqtetq .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 14px;
@@ -792,7 +875,7 @@ sample estimates:
   overflow-x: hidden;
 }
 
-#gyzdwbxjmz .gt_column_spanner_outer {
+#ahmfcqtetq .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 14px;
@@ -804,15 +887,15 @@ sample estimates:
   padding-right: 4px;
 }
 
-#gyzdwbxjmz .gt_column_spanner_outer:first-child {
+#ahmfcqtetq .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#gyzdwbxjmz .gt_column_spanner_outer:last-child {
+#ahmfcqtetq .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#gyzdwbxjmz .gt_column_spanner {
+#ahmfcqtetq .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -824,11 +907,11 @@ sample estimates:
   width: 100%;
 }
 
-#gyzdwbxjmz .gt_spanner_row {
+#ahmfcqtetq .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#gyzdwbxjmz .gt_group_heading {
+#ahmfcqtetq .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -854,7 +937,7 @@ sample estimates:
   text-align: left;
 }
 
-#gyzdwbxjmz .gt_empty_group_heading {
+#ahmfcqtetq .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -869,15 +952,15 @@ sample estimates:
   vertical-align: middle;
 }
 
-#gyzdwbxjmz .gt_from_md > :first-child {
+#ahmfcqtetq .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#gyzdwbxjmz .gt_from_md > :last-child {
+#ahmfcqtetq .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#gyzdwbxjmz .gt_row {
+#ahmfcqtetq .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -896,7 +979,7 @@ sample estimates:
   overflow-x: hidden;
 }
 
-#gyzdwbxjmz .gt_stub {
+#ahmfcqtetq .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -909,7 +992,7 @@ sample estimates:
   padding-right: 5px;
 }
 
-#gyzdwbxjmz .gt_stub_row_group {
+#ahmfcqtetq .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -923,15 +1006,15 @@ sample estimates:
   vertical-align: top;
 }
 
-#gyzdwbxjmz .gt_row_group_first td {
+#ahmfcqtetq .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#gyzdwbxjmz .gt_row_group_first th {
+#ahmfcqtetq .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#gyzdwbxjmz .gt_summary_row {
+#ahmfcqtetq .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -941,16 +1024,16 @@ sample estimates:
   padding-right: 5px;
 }
 
-#gyzdwbxjmz .gt_first_summary_row {
+#ahmfcqtetq .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#gyzdwbxjmz .gt_first_summary_row.thick {
+#ahmfcqtetq .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#gyzdwbxjmz .gt_last_summary_row {
+#ahmfcqtetq .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -960,7 +1043,7 @@ sample estimates:
   border-bottom-color: #D3D3D3;
 }
 
-#gyzdwbxjmz .gt_grand_summary_row {
+#ahmfcqtetq .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -970,7 +1053,7 @@ sample estimates:
   padding-right: 5px;
 }
 
-#gyzdwbxjmz .gt_first_grand_summary_row {
+#ahmfcqtetq .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -980,7 +1063,7 @@ sample estimates:
   border-top-color: #D3D3D3;
 }
 
-#gyzdwbxjmz .gt_last_grand_summary_row_top {
+#ahmfcqtetq .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -990,11 +1073,11 @@ sample estimates:
   border-bottom-color: #D3D3D3;
 }
 
-#gyzdwbxjmz .gt_striped {
+#ahmfcqtetq .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#gyzdwbxjmz .gt_table_body {
+#ahmfcqtetq .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1003,7 +1086,7 @@ sample estimates:
   border-bottom-color: #D3D3D3;
 }
 
-#gyzdwbxjmz .gt_footnotes {
+#ahmfcqtetq .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1017,7 +1100,7 @@ sample estimates:
   border-right-color: #D3D3D3;
 }
 
-#gyzdwbxjmz .gt_footnote {
+#ahmfcqtetq .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1026,7 +1109,7 @@ sample estimates:
   padding-right: 5px;
 }
 
-#gyzdwbxjmz .gt_sourcenotes {
+#ahmfcqtetq .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1040,7 +1123,7 @@ sample estimates:
   border-right-color: #D3D3D3;
 }
 
-#gyzdwbxjmz .gt_sourcenote {
+#ahmfcqtetq .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1048,72 +1131,72 @@ sample estimates:
   padding-right: 5px;
 }
 
-#gyzdwbxjmz .gt_left {
+#ahmfcqtetq .gt_left {
   text-align: left;
 }
 
-#gyzdwbxjmz .gt_center {
+#ahmfcqtetq .gt_center {
   text-align: center;
 }
 
-#gyzdwbxjmz .gt_right {
+#ahmfcqtetq .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#gyzdwbxjmz .gt_font_normal {
+#ahmfcqtetq .gt_font_normal {
   font-weight: normal;
 }
 
-#gyzdwbxjmz .gt_font_bold {
+#ahmfcqtetq .gt_font_bold {
   font-weight: bold;
 }
 
-#gyzdwbxjmz .gt_font_italic {
+#ahmfcqtetq .gt_font_italic {
   font-style: italic;
 }
 
-#gyzdwbxjmz .gt_super {
+#ahmfcqtetq .gt_super {
   font-size: 65%;
 }
 
-#gyzdwbxjmz .gt_footnote_marks {
+#ahmfcqtetq .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#gyzdwbxjmz .gt_asterisk {
+#ahmfcqtetq .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#gyzdwbxjmz .gt_indent_1 {
+#ahmfcqtetq .gt_indent_1 {
   text-indent: 5px;
 }
 
-#gyzdwbxjmz .gt_indent_2 {
+#ahmfcqtetq .gt_indent_2 {
   text-indent: 10px;
 }
 
-#gyzdwbxjmz .gt_indent_3 {
+#ahmfcqtetq .gt_indent_3 {
   text-indent: 15px;
 }
 
-#gyzdwbxjmz .gt_indent_4 {
+#ahmfcqtetq .gt_indent_4 {
   text-indent: 20px;
 }
 
-#gyzdwbxjmz .gt_indent_5 {
+#ahmfcqtetq .gt_indent_5 {
   text-indent: 25px;
 }
 
-#gyzdwbxjmz .katex-display {
+#ahmfcqtetq .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#gyzdwbxjmz div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#ahmfcqtetq div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
@@ -1151,9 +1234,9 @@ Summary Statistics (Median, Min, Max)
 <th id="race_available_percent" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Race Data Available (%)</th>
 <th id="income_available_percent" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Income Data Available (%)</th>
 <th id="tract_available_percent" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Tract Data Available (%)</th>
-<th id="race_stats" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Race (Median, Min, Max)</th>
-<th id="income_stats" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Income (Median, Min, Max)</th>
-<th id="tract_stats" class="gt_col_heading gt_columns_bottom_border gt_right" data-quarto-table-cell-role="th" scope="col">Tract (Median, Min, Max)</th>
+<th id="race_stats" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col">Race (Median, Min, Max)</th>
+<th id="income_stats" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col">Income (Median, Min, Max)</th>
+<th id="tract_stats" class="gt_col_heading gt_columns_bottom_border gt_left" data-quarto-table-cell-role="th" scope="col">Tract (Median, Min, Max)</th>
 </tr>
 </thead>
 <tbody class="gt_table_body">
@@ -1165,9 +1248,9 @@ Summary Statistics (Median, Min, Max)
 <td class="gt_row gt_right" headers="race_available_percent" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">50.81716</td>
 <td class="gt_row gt_right" headers="income_available_percent" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">78.65169</td>
 <td class="gt_row gt_right" headers="tract_available_percent" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">58.27375</td>
-<td class="gt_row gt_right" headers="race_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.09 ( 0 , 0.24 )</td>
-<td class="gt_row gt_right" headers="income_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.11 ( 0 , 0.27 )</td>
-<td class="gt_row gt_right" headers="tract_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.07 ( 0 , 0.25 )</td>
+<td class="gt_row gt_left" headers="race_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.0884 ( 2e-04 , 0.2396 )</td>
+<td class="gt_row gt_left" headers="income_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.1051 ( 2e-04 , 0.275 )</td>
+<td class="gt_row gt_left" headers="tract_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.0699 ( 1e-04 , 0.2452 )</td>
 </tr>
 <tr class="even">
 <td class="gt_row gt_left" headers="RUCC_group" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">Urban</td>
@@ -1177,9 +1260,9 @@ Summary Statistics (Median, Min, Max)
 <td class="gt_row gt_right" headers="race_available_percent" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">79.67960</td>
 <td class="gt_row gt_right" headers="income_available_percent" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">91.31535</td>
 <td class="gt_row gt_right" headers="tract_available_percent" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">82.04047</td>
-<td class="gt_row gt_right" headers="race_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.1 ( 0.01 , 0.23 )</td>
-<td class="gt_row gt_right" headers="income_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.14 ( 0 , 0.26 )</td>
-<td class="gt_row gt_right" headers="tract_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.13 ( 0 , 0.23 )</td>
+<td class="gt_row gt_left" headers="race_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.1012 ( 0.0109 , 0.2251 )</td>
+<td class="gt_row gt_left" headers="income_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.1376 ( 9e-04 , 0.2602 )</td>
+<td class="gt_row gt_left" headers="tract_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.1268 ( 8e-04 , 0.2321 )</td>
 </tr>
 <tr class="odd">
 <td class="gt_row gt_left" headers="RUCC_group" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">Overall</td>
@@ -1189,9 +1272,9 @@ Summary Statistics (Median, Min, Max)
 <td class="gt_row gt_right" headers="race_available_percent" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">61.70483</td>
 <td class="gt_row gt_right" headers="income_available_percent" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">83.42875</td>
 <td class="gt_row gt_right" headers="tract_available_percent" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">67.23919</td>
-<td class="gt_row gt_right" headers="race_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.09 ( 0 , 0.24 )</td>
-<td class="gt_row gt_right" headers="income_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.12 ( 0 , 0.27 )</td>
-<td class="gt_row gt_right" headers="tract_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.09 ( 0 , 0.25 )</td>
+<td class="gt_row gt_left" headers="race_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.0947 ( 2e-04 , 0.2396 )</td>
+<td class="gt_row gt_left" headers="income_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.1187 ( 2e-04 , 0.275 )</td>
+<td class="gt_row gt_left" headers="tract_stats" style="border-left-width: 2px; border-left-style: solid; border-left-color: black; border-right-width: 2px; border-right-style: solid; border-right-color: black; border-top-width: 2px; border-top-style: solid; border-top-color: black; border-bottom-width: 2px; border-bottom-style: solid; border-bottom-color: black">0.0936 ( 1e-04 , 0.2452 )</td>
 </tr>
 </tbody>
 </table>
@@ -1202,23 +1285,23 @@ Summary Statistics (Median, Min, Max)
 <p>Medians</p>
 <div class="cell">
 <div class="cell-output-display">
-<div id="fwumglzlvp" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
-<style>#fwumglzlvp table {
+<div id="lauonwlzhz" style="padding-left:0px;padding-right:0px;padding-top:10px;padding-bottom:10px;overflow-x:auto;overflow-y:auto;width:auto;height:auto;">
+<style>#lauonwlzhz table {
   font-family: system-ui, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-#fwumglzlvp thead, #fwumglzlvp tbody, #fwumglzlvp tfoot, #fwumglzlvp tr, #fwumglzlvp td, #fwumglzlvp th {
+#lauonwlzhz thead, #lauonwlzhz tbody, #lauonwlzhz tfoot, #lauonwlzhz tr, #lauonwlzhz td, #lauonwlzhz th {
   border-style: none;
 }
 
-#fwumglzlvp p {
+#lauonwlzhz p {
   margin: 0;
   padding: 0;
 }
 
-#fwumglzlvp .gt_table {
+#lauonwlzhz .gt_table {
   display: table;
   border-collapse: collapse;
   line-height: normal;
@@ -1244,12 +1327,12 @@ Summary Statistics (Median, Min, Max)
   border-left-color: #D3D3D3;
 }
 
-#fwumglzlvp .gt_caption {
+#lauonwlzhz .gt_caption {
   padding-top: 4px;
   padding-bottom: 4px;
 }
 
-#fwumglzlvp .gt_title {
+#lauonwlzhz .gt_title {
   color: #333333;
   font-size: 125%;
   font-weight: initial;
@@ -1261,7 +1344,7 @@ Summary Statistics (Median, Min, Max)
   border-bottom-width: 0;
 }
 
-#fwumglzlvp .gt_subtitle {
+#lauonwlzhz .gt_subtitle {
   color: #333333;
   font-size: 85%;
   font-weight: initial;
@@ -1273,7 +1356,7 @@ Summary Statistics (Median, Min, Max)
   border-top-width: 0;
 }
 
-#fwumglzlvp .gt_heading {
+#lauonwlzhz .gt_heading {
   background-color: #FFFFFF;
   text-align: center;
   border-bottom-color: #FFFFFF;
@@ -1285,13 +1368,13 @@ Summary Statistics (Median, Min, Max)
   border-right-color: #D3D3D3;
 }
 
-#fwumglzlvp .gt_bottom_border {
+#lauonwlzhz .gt_bottom_border {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
 }
 
-#fwumglzlvp .gt_col_headings {
+#lauonwlzhz .gt_col_headings {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1306,7 +1389,7 @@ Summary Statistics (Median, Min, Max)
   border-right-color: #D3D3D3;
 }
 
-#fwumglzlvp .gt_col_heading {
+#lauonwlzhz .gt_col_heading {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 14px;
@@ -1326,7 +1409,7 @@ Summary Statistics (Median, Min, Max)
   overflow-x: hidden;
 }
 
-#fwumglzlvp .gt_column_spanner_outer {
+#lauonwlzhz .gt_column_spanner_outer {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 14px;
@@ -1338,15 +1421,15 @@ Summary Statistics (Median, Min, Max)
   padding-right: 4px;
 }
 
-#fwumglzlvp .gt_column_spanner_outer:first-child {
+#lauonwlzhz .gt_column_spanner_outer:first-child {
   padding-left: 0;
 }
 
-#fwumglzlvp .gt_column_spanner_outer:last-child {
+#lauonwlzhz .gt_column_spanner_outer:last-child {
   padding-right: 0;
 }
 
-#fwumglzlvp .gt_column_spanner {
+#lauonwlzhz .gt_column_spanner {
   border-bottom-style: solid;
   border-bottom-width: 2px;
   border-bottom-color: #D3D3D3;
@@ -1358,11 +1441,11 @@ Summary Statistics (Median, Min, Max)
   width: 100%;
 }
 
-#fwumglzlvp .gt_spanner_row {
+#lauonwlzhz .gt_spanner_row {
   border-bottom-style: hidden;
 }
 
-#fwumglzlvp .gt_group_heading {
+#lauonwlzhz .gt_group_heading {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1388,7 +1471,7 @@ Summary Statistics (Median, Min, Max)
   text-align: left;
 }
 
-#fwumglzlvp .gt_empty_group_heading {
+#lauonwlzhz .gt_empty_group_heading {
   padding: 0.5px;
   color: #333333;
   background-color: #FFFFFF;
@@ -1403,15 +1486,15 @@ Summary Statistics (Median, Min, Max)
   vertical-align: middle;
 }
 
-#fwumglzlvp .gt_from_md > :first-child {
+#lauonwlzhz .gt_from_md > :first-child {
   margin-top: 0;
 }
 
-#fwumglzlvp .gt_from_md > :last-child {
+#lauonwlzhz .gt_from_md > :last-child {
   margin-bottom: 0;
 }
 
-#fwumglzlvp .gt_row {
+#lauonwlzhz .gt_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1430,7 +1513,7 @@ Summary Statistics (Median, Min, Max)
   overflow-x: hidden;
 }
 
-#fwumglzlvp .gt_stub {
+#lauonwlzhz .gt_stub {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1443,7 +1526,7 @@ Summary Statistics (Median, Min, Max)
   padding-right: 5px;
 }
 
-#fwumglzlvp .gt_stub_row_group {
+#lauonwlzhz .gt_stub_row_group {
   color: #333333;
   background-color: #FFFFFF;
   font-size: 100%;
@@ -1457,15 +1540,15 @@ Summary Statistics (Median, Min, Max)
   vertical-align: top;
 }
 
-#fwumglzlvp .gt_row_group_first td {
+#lauonwlzhz .gt_row_group_first td {
   border-top-width: 2px;
 }
 
-#fwumglzlvp .gt_row_group_first th {
+#lauonwlzhz .gt_row_group_first th {
   border-top-width: 2px;
 }
 
-#fwumglzlvp .gt_summary_row {
+#lauonwlzhz .gt_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1475,16 +1558,16 @@ Summary Statistics (Median, Min, Max)
   padding-right: 5px;
 }
 
-#fwumglzlvp .gt_first_summary_row {
+#lauonwlzhz .gt_first_summary_row {
   border-top-style: solid;
   border-top-color: #D3D3D3;
 }
 
-#fwumglzlvp .gt_first_summary_row.thick {
+#lauonwlzhz .gt_first_summary_row.thick {
   border-top-width: 2px;
 }
 
-#fwumglzlvp .gt_last_summary_row {
+#lauonwlzhz .gt_last_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1494,7 +1577,7 @@ Summary Statistics (Median, Min, Max)
   border-bottom-color: #D3D3D3;
 }
 
-#fwumglzlvp .gt_grand_summary_row {
+#lauonwlzhz .gt_grand_summary_row {
   color: #333333;
   background-color: #FFFFFF;
   text-transform: inherit;
@@ -1504,7 +1587,7 @@ Summary Statistics (Median, Min, Max)
   padding-right: 5px;
 }
 
-#fwumglzlvp .gt_first_grand_summary_row {
+#lauonwlzhz .gt_first_grand_summary_row {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1514,7 +1597,7 @@ Summary Statistics (Median, Min, Max)
   border-top-color: #D3D3D3;
 }
 
-#fwumglzlvp .gt_last_grand_summary_row_top {
+#lauonwlzhz .gt_last_grand_summary_row_top {
   padding-top: 8px;
   padding-bottom: 8px;
   padding-left: 5px;
@@ -1524,11 +1607,11 @@ Summary Statistics (Median, Min, Max)
   border-bottom-color: #D3D3D3;
 }
 
-#fwumglzlvp .gt_striped {
+#lauonwlzhz .gt_striped {
   background-color: rgba(128, 128, 128, 0.05);
 }
 
-#fwumglzlvp .gt_table_body {
+#lauonwlzhz .gt_table_body {
   border-top-style: solid;
   border-top-width: 2px;
   border-top-color: #D3D3D3;
@@ -1537,7 +1620,7 @@ Summary Statistics (Median, Min, Max)
   border-bottom-color: #D3D3D3;
 }
 
-#fwumglzlvp .gt_footnotes {
+#lauonwlzhz .gt_footnotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1551,7 +1634,7 @@ Summary Statistics (Median, Min, Max)
   border-right-color: #D3D3D3;
 }
 
-#fwumglzlvp .gt_footnote {
+#lauonwlzhz .gt_footnote {
   margin: 0px;
   font-size: 90%;
   padding-top: 4px;
@@ -1560,7 +1643,7 @@ Summary Statistics (Median, Min, Max)
   padding-right: 5px;
 }
 
-#fwumglzlvp .gt_sourcenotes {
+#lauonwlzhz .gt_sourcenotes {
   color: #333333;
   background-color: #FFFFFF;
   border-bottom-style: none;
@@ -1574,7 +1657,7 @@ Summary Statistics (Median, Min, Max)
   border-right-color: #D3D3D3;
 }
 
-#fwumglzlvp .gt_sourcenote {
+#lauonwlzhz .gt_sourcenote {
   font-size: 90%;
   padding-top: 4px;
   padding-bottom: 4px;
@@ -1582,72 +1665,72 @@ Summary Statistics (Median, Min, Max)
   padding-right: 5px;
 }
 
-#fwumglzlvp .gt_left {
+#lauonwlzhz .gt_left {
   text-align: left;
 }
 
-#fwumglzlvp .gt_center {
+#lauonwlzhz .gt_center {
   text-align: center;
 }
 
-#fwumglzlvp .gt_right {
+#lauonwlzhz .gt_right {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#fwumglzlvp .gt_font_normal {
+#lauonwlzhz .gt_font_normal {
   font-weight: normal;
 }
 
-#fwumglzlvp .gt_font_bold {
+#lauonwlzhz .gt_font_bold {
   font-weight: bold;
 }
 
-#fwumglzlvp .gt_font_italic {
+#lauonwlzhz .gt_font_italic {
   font-style: italic;
 }
 
-#fwumglzlvp .gt_super {
+#lauonwlzhz .gt_super {
   font-size: 65%;
 }
 
-#fwumglzlvp .gt_footnote_marks {
+#lauonwlzhz .gt_footnote_marks {
   font-size: 75%;
   vertical-align: 0.4em;
   position: initial;
 }
 
-#fwumglzlvp .gt_asterisk {
+#lauonwlzhz .gt_asterisk {
   font-size: 100%;
   vertical-align: 0;
 }
 
-#fwumglzlvp .gt_indent_1 {
+#lauonwlzhz .gt_indent_1 {
   text-indent: 5px;
 }
 
-#fwumglzlvp .gt_indent_2 {
+#lauonwlzhz .gt_indent_2 {
   text-indent: 10px;
 }
 
-#fwumglzlvp .gt_indent_3 {
+#lauonwlzhz .gt_indent_3 {
   text-indent: 15px;
 }
 
-#fwumglzlvp .gt_indent_4 {
+#lauonwlzhz .gt_indent_4 {
   text-indent: 20px;
 }
 
-#fwumglzlvp .gt_indent_5 {
+#lauonwlzhz .gt_indent_5 {
   text-indent: 25px;
 }
 
-#fwumglzlvp .katex-display {
+#lauonwlzhz .katex-display {
   display: inline-flex !important;
   margin-bottom: 0.75em !important;
 }
 
-#fwumglzlvp div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
+#lauonwlzhz div.Reactable > div.rt-table > div.rt-thead > div.rt-tr.rt-tr-group-header > div.rt-th-group:after {
   height: 0px !important;
 }
 </style>
