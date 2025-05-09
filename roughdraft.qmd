@@ -101,17 +101,19 @@ plot_map <- function(column, title, legend = TRUE) {
 
 #### **1. Introduction**
 
--   **Purpose of Study** 
+**Purpose of Study** 
 
-    Compare and quantify within-county disparities in homeownership across three domains (income, race/ethnicity, and geography) 
+-   Compare and quantify within-county disparities in homeownership across three domains (income, race/ethnicity, and geography)
+
+-   Compare and quantify the relationships between within-county disparities in homeownership across domains and county-level measures of health (premature mortality, f/p health, etc)
 
 **Research Questions and Hypotheses** 
 
--   **What are the magnitudes of disparity within counties for each domain?** 
+-   What are the magnitudes of disparity within counties for each domain?
 
--   **What is the relationship between these domains in terms of their effect on disparities?** 
+-   Are there state-level differences in disparity magnitudes and correlations? What conclusions can we draw based on these state-level differences? 
 
--   **Are there state-level differences in disparity magnitudes and correlations? What conclusions can we draw based on these state-level differences?** 
+-   What are the relationships between disparity within counties across each domain and county-level health?
 
 -   Something about missingness and data availability
 
@@ -127,17 +129,27 @@ plot_map <- function(column, title, legend = TRUE) {
 
 -   What does current lit say about the importance of measuring disparities across domains
 
-#### Methods 
+-   What does current lit say about the correlations between disparity and health?
 
-We begin by calculating homeownership rates using data from the 2018-2022 American Community Survey. The numerator is the total number of owner-occupied housing units and the denominator is the total number of occupied housing units. We calculate homeownership rates at the county-level for all US counties, at the census tract level, at the race-level within counties, and at the income-level within counties.
+### Methods 
 
-Next we calculate
+We begin by calculating homeownership rates using data from the 2018-2022 American Community Survey. The numerator is the total number of owner-occupied housing units and the denominator is the total number of occupied housing units. We calculate homeownership rates at the county-level for all US counties, at the census tract level, at the race-level within counties, and at the income-level within counties. We set homeownership rates to missing when the rate is unreliable, as indicated by a 95% confidence interval that falls outside of possible values (ie inclusive of rates that are less than 0 or greater than 1).
 
-number of measure within-county disparities using the standard deviation of population-weighted group means. We chose to use the standard deviation of population-weighted between group means because it is a robust and  
+Next we calculate within county disparities separately across race/ethnicity groups, across income groups, and across census tracts. We calculate within-county disparities using the standard deviation of population-weighted group means
+
+$$ insert equation here $$ 
+
+We chose to use the standard deviation of population-weighted group means because it produced normally distributed values and we found it to be robust to outliers. We also wanted a population-weighted group mean so that small populations would not overly skew the disparity metric.
+
+### Results 
+
+table here of just county-level homeownership rates
+
+map of county-level homeownership rates (to show missingness patterns)
 
 ## Maps with unstable estimates removed
 
-The coasts (California and New England) appear to have high tract and income disparities but possibly lower race disparities. Perhaps we should do some regional and/or state-level exploration.
+Median homeownership rates of counties with non-missing data by income, census tracts, and race/ethnicity were 73.0%, 71.7%, and 71.4%, respectively, with most missingness occuring across the western plains and central southesast. Within-county disparities were largest by income (11.9%), followed by race/ethnicity (9.5%) and census tracts (9.4%). The coasts (California and New England) appear to have high tract and income disparities but possibly lower race disparities.
 
 ```{r}
 # Plot each map
@@ -151,6 +163,8 @@ plot_race_wlegend
 ```
 
 ## Histograms of SD for Race, Income, Tract
+
+The majority of missingness occurs in rural counties where there are fewer
 
 ```{r histograms for urb cats}
 
@@ -211,6 +225,33 @@ plot_histograms_by_rucc <- function(rucc_group) {
 
 plot_histograms_by_rucc(rucc_group = "Rural")
 plot_histograms_by_rucc(rucc_group = "Urban")
+
+```
+
+percent missing
+
+```{r}
+
+
+
+
+# Calculate percent missing for each group
+missing_summary <- tworucc %>%
+  group_by(RUCC_2023) %>%
+  summarise(across(where(is.numeric), ~mean(is.na(.)) * 100, .names = "missing_{.col}")) %>%
+  pivot_longer(cols = starts_with("missing_"), 
+               names_to = "variable", 
+               values_to = "percent_missing") %>%
+  mutate(variable = gsub("missing_", "", variable))
+
+# Plot
+ggplot(missing_summary, aes(x = variable, y = percent_missing, fill = rurality)) +
+  geom_col(position = "dodge") +
+  labs(title = "Percent Missing by Rurality",
+       x = "Variable",
+       y = "Percent Missing") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ```
 
