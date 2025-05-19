@@ -230,7 +230,7 @@ plot_histograms_by_rucc(rucc_group = "Urban")
 
 percent missing
 
-```{r}
+```{r this doesnt work yet - goal is to add percent missing to the hist above}
 
 
 
