@@ -148,7 +148,7 @@ get_acs_tract_data <- function(year = year, variables = variables, survey = "acs
     map(~get_acs(state = .,
                  geography = "tract",
                  variables = variables,
-                 year = yr,
+                 year = year,
                  survey = survey,
                  output = "wide"))%>% 
     bind_rows() %>% 
@@ -164,111 +164,107 @@ get_acs_tract_data <- function(year = year, variables = variables, survey = "acs
 ### data
 
 ```{r}
+acs_2023_v153_tract <- 
+  get_acs_tract_data(year = 2023, variables = c('B25003_001', 'B25003_002', 'B01001_001')) %>% 
+  glimpse()
+
 acs_2022_v153_tract <- 
-  get_acs_tract_data(year = yr, variables = c('B25003_001', 'B25003_002', 'B01001_001')) %>% 
+  get_acs_tract_data(year = 2022, variables = c('B25003_001', 'B25003_002', 'B01001_001')) %>% 
+  glimpse()
+
+acs_2021_v153_tract <- 
+  get_acs_tract_data(year = 2021, variables = c('B25003_001', 'B25003_002', 'B01001_001')) %>% 
+  glimpse()
+
+acs_2020_v153_tract <- 
+  get_acs_tract_data(year = 2020, variables = c('B25003_001', 'B25003_002', 'B01001_001')) %>% 
+  glimpse()
+
+acs_2019_v153_tract <- 
+  get_acs_tract_data(year = 2019, variables = c('B25003_001', 'B25003_002', 'B01001_001')) %>% 
+  glimpse()
+
+acs_2018_v153_tract <- 
+  get_acs_tract_data(year = 2018, variables = c('B25003_001', 'B25003_002', 'B01001_001')) %>% 
   glimpse()
 ```
 
+## efficient calcs of all years
+```{r efficient calcs of all years with cis}
 
 
+library(dplyr)
+library(purrr)
 
-## calculation
+# Create a named list of your datasets
+acs_datasets <- list(
+  `2018` = acs_2018_v153_tract,
+  `2019` = acs_2019_v153_tract,
+  `2020` = acs_2020_v153_tract,
+  `2021` = acs_2021_v153_tract,
+  `2022` = acs_2022_v153_tract,
+  `2023` = acs_2023_v153_tract
+)
 
-```{r withcis }
-v153_disparity_tract_cis <- acs_2022_v153_tract %>% 
-  #select(statecode, countycode, fipscode, B01001_001E, B25003_002E, B25003_001E, B25003_002M, B25003_001M) %>% 
-  rename(pop = B01001_001E, 
-         numerator = B25003_002E, 
-         denominator = B25003_001E, 
-         numerator_moe = B25003_002M, 
-         denominator_moe = B25003_001M) %>% 
-  mutate(rawvalue = numerator / denominator) %>% 
-   # Calculate the lower and upper bounds for 95% CI of rawvalue
-  mutate(
-    se_rawvalue = sqrt((numerator_moe^2 / denominator^2) + 
-                       (numerator^2 * denominator_moe^2 / denominator^4)),
-    ci_lower = rawvalue - 1.96 * se_rawvalue,
-    ci_upper = rawvalue + 1.96 * se_rawvalue
-  ) %>% 
-  # edit rawvalue column based on the condition
-  mutate(rawvalue = if_else(ci_lower >= 0 & ci_upper <= 1 & !is.na(ci_lower) & !is.na(ci_upper), 
-                               rawvalue, NA_real_)) %>% 
-  mutate(pop_wt = if_else(is.na(rawvalue), 0, pop)) %>% # set pop=0 if a tract has missing raw value, i.e, exclude a tract in weighting if it has missing raw value
-  mutate(pop_th = if_else(rawvalue>0, pop, 0)) %>% # set pop=0 if a tract has missing or 0 raw value, i.e, exclude a tract in weighting if it has missing or 0 raw value
-  group_by(fipscode) %>% 
-  # mutate(pop_i = pop / sum(pop), .after = pop) %>% 
-  mutate(pop_i = pop_wt / sum(pop_wt), .after = pop) %>% 
-  mutate(pop_th_i = pop_th / sum(pop_th)) %>% 
-  mutate(rawvalue_th = if_else(rawvalue ==0|is.nan(rawvalue), NA, rawvalue)) %>% 
-  # filter(fipscode == "15005") %>%
-  summarise(statecode = first(statecode), countycode = first(countycode),
-            num_tract = n(), 
-            num_tract_counted = sum(!is.na(rawvalue)),
-            pop_tot = sum(pop), 
-            pop_counted = sum(pop_wt),
-            mean = mean(rawvalue, na.rm = TRUE),
-            mean_wt = stats::weighted.mean(rawvalue, pop_i, na.rm = TRUE),
-            # mean_wt_2 = sum(pop*rawvalue, na.rm = TRUE)/sum(pop), # this includes tracts with raw value missing but pop is not 0, which causes trouble
-            sd_s = sd(rawvalue, na.rm = TRUE), # sample sd
-            sd_p =  sqrt((num_tract_counted - 1)/num_tract_counted) * sd(rawvalue, na.rm = TRUE), # population SD
-            bgv = sum(pop_i * (rawvalue - mean(rawvalue, na.rm = TRUE))^2, na.rm = TRUE),
-            sd_bgv = sqrt(bgv),
-            bgv_wt = sum(pop_i * (rawvalue - weighted.mean(rawvalue, w = pop_i, na.rm = TRUE))^2, 
-                         na.rm = TRUE),
-            sd_bgv_wt = sqrt(bgv_wt),
-            num_tract_theil_counted = sum(rawvalue>0, na.rm = TRUE),
-            mean_th = mean(rawvalue_th, na.rm = TRUE),
-            mean_th_wt = stats::weighted.mean(rawvalue_th, pop_th, na.rm = TRUE),
-            theil = theil_wtd_gl(rawvalue),
-            theil_wt = theil_wtd_gl(rawvalue, pop_wt),
-            )
+# Define the function to process each dataset
+process_acs <- function(df) {
+  df %>%
+    rename(
+      pop = B01001_001E,
+      numerator = B25003_002E,
+      denominator = B25003_001E,
+      numerator_moe = B25003_002M,
+      denominator_moe = B25003_001M
+    ) %>%
+    mutate(rawvalue = numerator / denominator) %>%
+    mutate(
+      se_rawvalue = sqrt((numerator_moe^2 / denominator^2) +
+                         (numerator^2 * denominator_moe^2 / denominator^4)),
+      ci_lower = rawvalue - 1.96 * se_rawvalue,
+      ci_upper = rawvalue + 1.96 * se_rawvalue,
+      rawvalue = if_else(ci_lower >= 0 & ci_upper <= 1 &
+                         !is.na(ci_lower) & !is.na(ci_upper), rawvalue, NA_real_),
+      pop_wt = if_else(is.na(rawvalue), 0, pop),
+      pop_th = if_else(rawvalue > 0, pop, 0)
+    ) %>%
+    group_by(fipscode) %>%
+    mutate(
+      pop_i = pop_wt / sum(pop_wt),
+      pop_th_i = pop_th / sum(pop_th),
+      rawvalue_th = if_else(rawvalue == 0 | is.nan(rawvalue), NA_real_, rawvalue)
+    ) %>%
+    summarise(
+      statecode = first(statecode), countycode = first(countycode),
+      num_tract = n(),
+      num_tract_counted = sum(!is.na(rawvalue)),
+      pop_tot = sum(pop),
+      pop_counted = sum(pop_wt),
+      mean = mean(rawvalue, na.rm = TRUE),
+      mean_wt = stats::weighted.mean(rawvalue, pop_i, na.rm = TRUE),
+      sd_s = sd(rawvalue, na.rm = TRUE),
+      sd_p = sqrt((num_tract_counted - 1)/num_tract_counted) * sd(rawvalue, na.rm = TRUE),
+      bgv = sum(pop_i * (rawvalue - mean(rawvalue, na.rm = TRUE))^2, na.rm = TRUE),
+      sd_bgv = sqrt(bgv),
+      bgv_wt = sum(pop_i * (rawvalue - weighted.mean(rawvalue, w = pop_i, na.rm = TRUE))^2, na.rm = TRUE),
+      sd_bgv_wt = sqrt(bgv_wt),
+      num_tract_theil_counted = sum(rawvalue > 0, na.rm = TRUE),
+      mean_th = mean(rawvalue_th, na.rm = TRUE),
+      mean_th_wt = stats::weighted.mean(rawvalue_th, pop_th, na.rm = TRUE),
+      theil = theil_wtd_gl(rawvalue),
+      theil_wt = theil_wtd_gl(rawvalue, pop_wt),
+      .groups = "drop"
+    )
+}
+
+# Apply to all datasets and bind results
+v153_disparity_tract_cis_all_years <- imap_dfr(
+  acs_datasets,
+  ~process_acs(.x) %>% mutate(year = .y)
+)
 
 ```
 
 
-
-
-```{r no suppression}
-v153_disparity_tract <- acs_2022_v153_tract %>% 
-  #select(statecode, countycode, fipscode, B01001_001E, B25003_002E, B25003_001E, B25003_002M, B25003_001M) %>% 
-  rename(pop = B01001_001E, 
-         numerator = B25003_002E, 
-         denominator = B25003_001E, 
-         numerator_moe = B25003_002M, 
-         denominator_moe = B25003_001M) %>% 
-  mutate(rawvalue = numerator/denominator) %>% 
-  mutate(pop_wt = if_else(is.na(rawvalue), 0, pop)) %>% # set pop=0 if a tract has missing raw value, i.e, exclude a tract in weighting if it has missing raw value
-  mutate(pop_th = if_else(rawvalue>0, pop, 0)) %>% # set pop=0 if a tract has missing or 0 raw value, i.e, exclude a tract in weighting if it has missing or 0 raw value
-  group_by(fipscode) %>% 
-  # mutate(pop_i = pop / sum(pop), .after = pop) %>% 
-  mutate(pop_i = pop_wt / sum(pop_wt), .after = pop) %>% 
-  mutate(pop_th_i = pop_th / sum(pop_th)) %>% 
-  mutate(rawvalue_th = if_else(rawvalue ==0|is.nan(rawvalue), NA, rawvalue)) %>% 
-  # filter(fipscode == "15005") %>%
-  summarise(statecode = first(statecode), countycode = first(countycode),
-            num_tract = n(), 
-            num_tract_counted = sum(!is.na(rawvalue)),
-            pop_tot = sum(pop), 
-            pop_counted = sum(pop_wt),
-            mean = mean(rawvalue, na.rm = TRUE),
-            mean_wt = stats::weighted.mean(rawvalue, pop_i, na.rm = TRUE),
-            # mean_wt_2 = sum(pop*rawvalue, na.rm = TRUE)/sum(pop), # this includes tracts with raw value missing but pop is not 0, which causes trouble
-            sd_s = sd(rawvalue, na.rm = TRUE), # sample sd
-            sd_p =  sqrt((num_tract_counted - 1)/num_tract_counted) * sd(rawvalue, na.rm = TRUE), # population SD
-            bgv = sum(pop_i * (rawvalue - mean(rawvalue, na.rm = TRUE))^2, na.rm = TRUE),
-            sd_bgv = sqrt(bgv),
-            bgv_wt = sum(pop_i * (rawvalue - weighted.mean(rawvalue, w = pop_i, na.rm = TRUE))^2, 
-                         na.rm = TRUE),
-            sd_bgv_wt = sqrt(bgv_wt),
-            num_tract_theil_counted = sum(rawvalue>0, na.rm = TRUE),
-            mean_th = mean(rawvalue_th, na.rm = TRUE),
-            mean_th_wt = stats::weighted.mean(rawvalue_th, pop_th, na.rm = TRUE),
-            theil = theil_wtd_gl(rawvalue),
-            theil_wt = theil_wtd_gl(rawvalue, pop_wt),
-            )
-
-v153_disparity_tract
-```
 
 
 # ----------
@@ -381,176 +377,166 @@ vars_pop_race
 
 ```{r}
 # county level
-acs_2022_v153_race <- get_acs_data(year = yr, variables = c(vars_v153_race,vars_pop_race) )
+acs_2023_v153_race <- get_acs_data(year = 2023, variables = c(vars_v153_race,vars_pop_race) )
+acs_2022_v153_race <- get_acs_data(year = 2022, variables = c(vars_v153_race,vars_pop_race) )
+acs_2021_v153_race <- get_acs_data(year = 2021, variables = c(vars_v153_race,vars_pop_race) )
+acs_2020_v153_race <- get_acs_data(year = 2020, variables = c(vars_v153_race,vars_pop_race) )
+acs_2019_v153_race <- get_acs_data(year = 2019, variables = c(vars_v153_race,vars_pop_race) )
+acs_2018_v153_race <- get_acs_data(year = 2018, variables = c(vars_v153_race,vars_pop_race) )
 
 acs_2022_v153_race
 ```
 
 
-#### DP
-DP05_0080	Estimate!!HISPANIC OR LATINO AND RACE!!Total population!!Not Hispanic or Latino!!Black or African American alone
-DP05_0038	Estimate!!RACE!!Total population!!One race!!Black or African American
-DP05_0067	Estimate!!Race alone or in combination with one or more other races!!Total population!!Black or African American
-
-
-```{r}
-pop_dp <- get_acs_data(year = yr, 
-                       variables = c('DP05_0080','DP05_0038', 'DP05_0067') )
-
-```
 
 ## calculation
 
-### numerator
+### numerator all years 
+
+```{r}
+# Create a named list of race datasets
+acs_race_datasets <- list(
+  `2018` = acs_2018_v153_race,
+  `2019` = acs_2019_v153_race,
+  `2020` = acs_2020_v153_race,
+  `2021` = acs_2021_v153_race,
+  `2022` = acs_2022_v153_race,
+  `2023` = acs_2023_v153_race
+)
+
+# Function to process each year's race dataset
+process_race_numerator <- function(df) {
+  df_numerator <- df %>%
+    select(GEOID, statecode, countycode, starts_with("B25003")) %>%
+    filter(countycode != "000") %>%
+    select(GEOID, statecode, countycode, ends_with("_002E")) %>%
+    pivot_longer(cols = starts_with("B25003"), names_to = "race", values_to = "numerator") %>%
+    mutate(race = str_remove_all(race, "B25003|_002E"))
+  
+  df_moe <- df %>%
+    select(GEOID, statecode, countycode, starts_with("B25003")) %>%
+    filter(countycode != "000") %>%
+    pivot_longer(cols = ends_with("_002M"), names_to = "race", values_to = "numerator_moe") %>%
+    mutate(race = str_remove_all(race, "B25003|_002M"))
+  
+  df_numerator %>%
+    left_join(df_moe, by = c("GEOID", "statecode", "countycode", "race"))
+}
+
+# Apply the function across all datasets and add year column
+race_numerators_all_years <- imap_dfr(
+  acs_race_datasets,
+  ~process_race_numerator(.x) %>% mutate(year = .y)
+)
+```
+
+
+### denominators all years 
 
 ```{r}
 
 
-acs_2022_v153_race_numerator <- acs_2022_v153_race %>% 
-  dplyr::select(GEOID, statecode, countycode, starts_with('B25003')) %>% 
-  filter(countycode != "000") %>% 
-  dplyr::select(GEOID, statecode, countycode, ends_with('_002E')) %>% 
-  pivot_longer(cols = starts_with("B25003"), names_to = "race", values_to = "numerator")%>% 
-  mutate(race = str_remove_all(race, "B25003|_002E"))
+# Function to extract denominators and MOEs
+process_race_denominator <- function(df) {
+  df_denominator <- df %>%
+    select(GEOID, statecode, countycode, starts_with("B25003")) %>%
+    filter(countycode != "000") %>%
+    select(GEOID, statecode, countycode, ends_with("_001E")) %>%
+    pivot_longer(cols = starts_with("B25003"), names_to = "race", values_to = "denominator") %>%
+    mutate(race = str_remove_all(race, "B25003|_001E"))
+  
+  df_moe <- df %>%
+    select(GEOID, statecode, countycode, starts_with("B25003")) %>%
+    filter(countycode != "000") %>%
+    pivot_longer(cols = ends_with("_001M"), names_to = "race", values_to = "denominator_moe") %>%
+    mutate(race = str_remove_all(race, "B25003|_001M"))
+  
+  df_denominator %>%
+    left_join(df_moe, by = c("GEOID", "statecode", "countycode", "race"))
+}
 
-# Pivoting for the margin of error (ends with _001M)
-acs_2022_v153_race_moe <- acs_2022_v153_race %>% 
-  dplyr::select(GEOID, statecode, countycode, starts_with('B25003')) %>% 
-  filter(countycode != "000") %>%
-  pivot_longer(cols = ends_with('_002M'), names_to = "race", values_to = "numerator_moe") %>%
-  mutate(race = str_remove_all(race, "B25003|_002M"))
-
-# Joining the denominator and margin of error by GEOID, statecode, countycode, and race
-acs_2022_v153_race_num <- acs_2022_v153_race_numerator %>%
-  left_join(acs_2022_v153_race_moe, by = c("GEOID", "statecode", "countycode", "race"))
-
-acs_2022_v153_race_num
-```
-
-### denominator
-```{r}
-acs_2022_v153_race_denominator <- acs_2022_v153_race %>% 
-  dplyr::select(GEOID, statecode, countycode, starts_with('B25003')) %>% 
-  filter(countycode != "000") %>% 
-  dplyr::select(GEOID, statecode, countycode, ends_with('_001E')) %>% 
-  pivot_longer(cols = starts_with("B25003"), names_to = "race", values_to = "denominator") %>% 
-  mutate(race = str_remove_all(race, "B25003|_001E"))
-
-
-# Pivoting for the margin of error (ends with _001M)
-acs_2022_v153_race_moe <- acs_2022_v153_race %>% 
-  dplyr::select(GEOID, statecode, countycode, starts_with('B25003')) %>% 
-  filter(countycode != "000") %>%
-  pivot_longer(cols = ends_with('_001M'), names_to = "race", values_to = "denominator_moe") %>%
-  mutate(race = str_remove_all(race, "B25003|_001M"))
-
-# Joining the denominator and margin of error by GEOID, statecode, countycode, and race
-acs_2022_v153_race_den <- acs_2022_v153_race_denominator %>%
-  left_join(acs_2022_v153_race_moe, by = c("GEOID", "statecode", "countycode", "race"))
-
+# Apply function to all datasets, add year
+race_denominators_all_years <- imap_dfr(
+  acs_race_datasets,
+  ~process_race_denominator(.x) %>% mutate(year = .y)
+)
 
 ```
 
-### pop
+
+### pop all years 
 
 ```{r}
-acs_2022_v153_race_pop <- acs_2022_v153_race %>% 
-  dplyr::select(GEOID, statecode, countycode, starts_with('B01001')) %>% 
-  filter(countycode != "000") %>% 
-  dplyr::select(GEOID, statecode, countycode, ends_with('_001E')) %>% 
-  pivot_longer(cols = starts_with("B01001"), names_to = "race", values_to = "pop") %>% 
-  mutate(race = str_remove_all(race, "B01001|_001E"))
+# Function to extract population by race
+process_race_population <- function(df) {
+  df %>%
+    select(GEOID, statecode, countycode, starts_with("B01001")) %>%
+    filter(countycode != "000") %>%
+    select(GEOID, statecode, countycode, ends_with("_001E")) %>%
+    pivot_longer(cols = starts_with("B01001"), names_to = "race", values_to = "pop") %>%
+    mutate(race = str_remove_all(race, "B01001|_001E"))
+}
 
-acs_2022_v153_race_pop
-```
+# Apply function to all datasets, add year
+race_population_all_years <- imap_dfr(
+  acs_race_datasets,
+  ~process_race_population(.x) %>% mutate(year = .y)
+)
 
-### disparity
-
-```{r}
-v153_disparity_race <- purrr::reduce(
-  list(acs_2022_v153_race_pop, acs_2022_v153_race_num, acs_2022_v153_race_den),
-  dplyr::left_join,
-  by = c('GEOID', 'statecode', 'countycode', 'race')
-) %>% 
-  mutate(rawvalue = numerator/denominator) %>% 
-  mutate(pop_wt = if_else(is.na(rawvalue), 0, pop)) %>% # set pop=0 if a group has missing raw value, i.e, exclude a group in weighting if it has missing raw value
-  mutate(pop_th = if_else(rawvalue>0, pop, 0)) %>% # set pop=0 if a tract has missing or 0 raw value, i.e, exclude a tract in weighting if it has missing or 0 raw value
-  group_by(GEOID) %>% 
-  mutate(pop_i = pop_wt / sum(pop_wt), .after = pop) %>% 
-  mutate(rawvalue_th = if_else(rawvalue ==0|is.nan(rawvalue), NA, rawvalue)) %>% 
-  summarise(statecode = first(statecode), countycode = first(countycode),
-            num_grp = n(), 
-            num_grp_counted = sum(!is.na(rawvalue)),
-            pop_tot = sum(pop), 
-            pop_counted = sum(pop_wt),
-            mean = mean(rawvalue, na.rm = TRUE),
-            mean_wt = stats::weighted.mean(rawvalue, pop_i, na.rm = TRUE),
-            sd_s = sd(rawvalue, na.rm = TRUE), # sample sd
-            sd_p =  sqrt((num_grp_counted - 1)/num_grp_counted) * sd(rawvalue, na.rm = TRUE), # population SD
-            bgv = sum(pop_i * (rawvalue - mean(rawvalue, na.rm = TRUE))^2, na.rm = TRUE),
-            sd_bgv = sqrt(bgv),
-            bgv_wt = sum(pop_i * (rawvalue - weighted.mean(rawvalue, w = pop_i, na.rm = TRUE))^2, 
-                         na.rm = TRUE),
-            sd_bgv_wt = sqrt(bgv_wt),
-            num_tract_theil_counted = sum(rawvalue>0, na.rm = TRUE),
-            mean_th = mean(rawvalue_th, na.rm = TRUE),
-            mean_th_wt = stats::weighted.mean(rawvalue_th, pop_th, na.rm = TRUE),
-            theil = theil_wtd_gl(rawvalue),
-            theil_wt = theil_wtd_gl(rawvalue, pop_wt),
-            )
-
-v153_disparity_race
 ```
 
 
-```{r disparity race with cis}
-v153_disparity_race_cis <- purrr::reduce(
-  list(acs_2022_v153_race_pop, acs_2022_v153_race_num, acs_2022_v153_race_den),
-  dplyr::left_join,
-  by = c('GEOID', 'statecode', 'countycode', 'race')
+### disparity all years 
+
+
+```{r including cis}
+# Join all data together
+v153_disparity_race_cis_all_years <- list(
+  race_population_all_years,
+  race_numerators_all_years,
+  race_denominators_all_years
 ) %>%
-  group_by(GEOID) %>% 
+  purrr::reduce(left_join, by = c("year", "GEOID", "statecode", "countycode", "race")) %>%
+  group_by(year, GEOID) %>%
   mutate(
     rawvalue = numerator / denominator,
-    # Calculate the Lower and Upper Confidence Intervals (CIs)
     ci_lower = (numerator - numerator_moe) / (denominator + denominator_moe), 
     ci_upper = (numerator + numerator_moe) / (denominator - denominator_moe),
-    
-     # Set rawvalue to NA if ci_lower < 0 or ci_upper > 1
     rawvalue = if_else(ci_lower < 0 | ci_upper > 1, NA_real_, rawvalue),
-    
-    pop_wt = if_else(is.na(rawvalue), 0, pop), # set pop=0 if a group has missing raw value
-    pop_th = if_else(rawvalue > 0, pop, 0), # set pop=0 if a tract has missing or 0 raw value
-      pop_i = pop_wt / sum(pop_wt), .after = pop,
-      rawvalue_th = if_else(rawvalue == 0 | is.nan(rawvalue), NA, rawvalue)
-    ) %>% 
-    summarise(
-      statecode = first(statecode),
-      countycode = first(countycode),
-      num_grp = n(),
-      num_grp_counted = sum(!is.na(rawvalue)),
-      pop_tot = sum(pop),
-      pop_counted = sum(pop_wt),
-      mean = mean(rawvalue, na.rm = TRUE),
-      mean_wt = stats::weighted.mean(rawvalue, pop_i, na.rm = TRUE),
-      sd_s = sd(rawvalue, na.rm = TRUE), # sample sd
-      sd_p = sqrt((num_grp_counted - 1) / num_grp_counted) * sd(rawvalue, na.rm = TRUE), # population SD
-      bgv = sum(pop_i * (rawvalue - mean(rawvalue, na.rm = TRUE))^2, na.rm = TRUE),
-      sd_bgv = sqrt(bgv),
-      bgv_wt = sum(pop_i * (rawvalue - weighted.mean(rawvalue, w = pop_i, na.rm = TRUE))^2, 
-                   na.rm = TRUE),
-      sd_bgv_wt = sqrt(bgv_wt),
-      num_tract_theil_counted = sum(rawvalue > 0, na.rm = TRUE),
-      mean_th = mean(rawvalue_th, na.rm = TRUE),
-      mean_th_wt = stats::weighted.mean(rawvalue_th, pop_th, na.rm = TRUE),
-      theil = theil_wtd_gl(rawvalue),
-      theil_wt = theil_wtd_gl(rawvalue, pop_wt)
-    )
-  
-
-      
-      
+    pop_wt = if_else(is.na(rawvalue), 0, pop),
+    pop_th = if_else(rawvalue > 0, pop, 0),
+    pop_i = pop_wt / sum(pop_wt), .after = pop,
+    rawvalue_th = if_else(rawvalue == 0 | is.nan(rawvalue), NA_real_, rawvalue)
+  ) %>%
+  summarise(
+    statecode = first(statecode),
+    countycode = first(countycode),
+    num_grp = n(),
+    num_grp_counted = sum(!is.na(rawvalue)),
+    pop_tot = sum(pop),
+    pop_counted = sum(pop_wt),
+    mean = mean(rawvalue, na.rm = TRUE),
+    mean_wt = weighted.mean(rawvalue, pop_i, na.rm = TRUE),
+    sd_s = sd(rawvalue, na.rm = TRUE),
+    sd_p = sqrt((num_grp_counted - 1) / num_grp_counted) * sd(rawvalue, na.rm = TRUE),
+    bgv = sum(pop_i * (rawvalue - mean(rawvalue, na.rm = TRUE))^2, na.rm = TRUE),
+    sd_bgv = sqrt(bgv),
+    bgv_wt = sum(pop_i * (rawvalue - weighted.mean(rawvalue, w = pop_i, na.rm = TRUE))^2, na.rm = TRUE),
+    sd_bgv_wt = sqrt(bgv_wt),
+    num_tract_theil_counted = sum(rawvalue > 0, na.rm = TRUE),
+    mean_th = mean(rawvalue_th, na.rm = TRUE),
+    mean_th_wt = weighted.mean(rawvalue_th, pop_th, na.rm = TRUE),
+    theil = theil_wtd_gl(rawvalue),
+    theil_wt = theil_wtd_gl(rawvalue, pop_wt),
+    .groups = "drop"
+  )
 ```
+
+
+
+
+
+
 
 
 
