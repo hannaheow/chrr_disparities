@@ -97,10 +97,9 @@ theil_wtd_gl(x)
 
 ### Detailed Tables (start with B or C)
 ```{r}
-yr <- 2022
 
 ## Detailed Tables (start with B or C)
-v22 <- load_variables(year = yr, "acs5", cache = TRUE)
+v22 <- load_variables(year = 2022, "acs5", cache = TRUE)
 
 vars_B25003 <- v22 %>% 
   filter(str_detect(name, 'B25003'))
@@ -111,7 +110,7 @@ vars_B25003
 ### S: Subject tables (start with S)
 ```{r}
 ## S: Subject tables (start with S)
-v22_s <- load_variables(year = yr, dataset = "acs5/subject", cache = TRUE)
+v22_s <- load_variables(year = 2022, dataset = "acs5/subject", cache = TRUE)
 
 v22_s %>% 
   filter(str_detect(name, "S1901"))
@@ -187,6 +186,27 @@ acs_2019_v153_tract <-
 acs_2018_v153_tract <- 
   get_acs_tract_data(year = 2018, variables = c('B25003_001', 'B25003_002', 'B01001_001')) %>% 
   glimpse()
+
+acs_2017_v153_tract <- 
+  get_acs_tract_data(year = 2017, variables = c('B25003_001', 'B25003_002', 'B01001_001')) %>% 
+  glimpse()
+
+acs_2016_v153_tract <- 
+  get_acs_tract_data(year = 2016, variables = c('B25003_001', 'B25003_002', 'B01001_001')) %>% 
+  glimpse()
+
+acs_2015_v153_tract <- 
+  get_acs_tract_data(year = 2015, variables = c('B25003_001', 'B25003_002', 'B01001_001')) %>% 
+  glimpse()
+
+acs_2014_v153_tract <- 
+  get_acs_tract_data(year = 2014, variables = c('B25003_001', 'B25003_002', 'B01001_001')) %>% 
+  glimpse()
+
+acs_2013_v153_tract <- 
+  get_acs_tract_data(year = 2013, variables = c('B25003_001', 'B25003_002', 'B01001_001')) %>% 
+  glimpse()
+
 ```
 
 ## efficient calcs of all years
@@ -198,6 +218,11 @@ library(purrr)
 
 # Create a named list of your datasets
 acs_datasets <- list(
+  `2013` = acs_2013_v153_tract,
+  `2014` = acs_2014_v153_tract,
+  `2015` = acs_2015_v153_tract,
+  `2016` = acs_2016_v153_tract,
+  `2017` = acs_2017_v153_tract,
   `2018` = acs_2018_v153_tract,
   `2019` = acs_2019_v153_tract,
   `2020` = acs_2020_v153_tract,
@@ -963,15 +988,29 @@ v153_disparity_income_cis <- purrr::reduce(
             )
 ```
 
+```{r get the NAs corrected }
+# Set specific columns to NA if they are 0
+v153_disparity_tract_cis_all_years <- v153_disparity_tract_cis_all_years %>%
+  mutate(sd_bgv_wt = ifelse( sd_bgv_wt == 0, NA, sd_bgv_wt))  
+v153_disparity_race_cis_all_years <- v153_disparity_race_cis_all_years %>%
+  mutate(sd_bgv_wt = ifelse( sd_bgv_wt == 0, NA, sd_bgv_wt))  
+v153_disparity_income_cis_all_years <- v153_disparity_income_cis_allyears %>%
+  mutate(sd_bgv_wt = ifelse( sd_bgv_wt == 0, NA, sd_bgv_wt))  
+
+
+
+```
+
+
 
 # save outputs 
 ```{r}
-save(v153_disparity_income, file = "calcd_data_how/income.RData")
-save(v153_disparity_income_cis, file = "calcd_data_how/income_cis.RData")
-save(v153_disparity_race, file = "calcd_data_how/race.RData")
-save(v153_disparity_race_cis, file = "calcd_data_how/race_cis.RData")
-save(v153_disparity_tract, file = "calcd_data_how/tract.RData")
-save(v153_disparity_tract_cis, file = "calcd_data_how/tract_cis.RData")
+#save(v153_disparity_income, file = "calcd_data_how/income.RData")
+#save(v153_disparity_income_cis, file = "calcd_data_how/income_cis.RData")
+#save(v153_disparity_race, file = "calcd_data_how/race.RData")
+#save(v153_disparity_race_cis, file = "calcd_data_how/race_cis.RData")
+#save(v153_disparity_tract, file = "calcd_data_how/tract.RData")
+#save(v153_disparity_tract_cis, file = "calcd_data_how/tract_cis.RData")
 
 save(v153_disparity_tract_cis_all_years, file = "calcd_data_how/tract_cis_all_years.RData")
 save(v153_disparity_income_cis_allyears, file = "calcd_data_how/income_cis_all_years.RData")

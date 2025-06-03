@@ -1,5 +1,5 @@
 ---
-title: "Rough draft"
+title: An examination of disparities in homeownership across three domains: race/ethnicity, income, and geography 
 #format: pdf
 execute:
   echo: false      # This hides the code from being printed
@@ -15,35 +15,31 @@ output:
 ```{r get data into a usable form }
 library(tidyverse)
 # Load each file and assign to a new variable name
-assign("tract", get(load("calcd_data_how/tract.RData")))
-assign("tract_cis", get(load("calcd_data_how/tract_cis.RData")))
-assign("race", get(load("calcd_data_how/race.RData")))
-assign("race_cis", get(load("calcd_data_how/race_cis.RData")))
-assign("income", get(load("calcd_data_how/income.RData")))
-assign("income_cis", get(load("calcd_data_how/income_cis.RData")))
+assign("tract", get(load("calcd_data_how/tract_cis_all_years.RData")))
+assign("race", get(load("calcd_data_how/race_cis_all_years.RData")))
+assign("income", get(load("calcd_data_how/income_cis_all_years.RData")))
 
 # Function to rename columns except the first three
 rename_columns_cis <- function(df, dataset_name) {
   df %>%
-    rename_with(~ ifelse(. %in% c("statecode", "countycode", "fipscode", "GEOID"), ., paste0(dataset_name, "_", .)))
+    rename_with(~ ifelse(. %in% c("statecode", "countycode", "fipscode", "GEOID", "year"), ., paste0(dataset_name, "_", .)))
   #, -c(statecode, countycode, fipscode, GEOID))
 }
 
-# Rename columns for tract_cis, race_cis, and income_cis
-tract_cis <- rename_columns_cis(tract_cis, "tract_cis")
-race_cis <- rename_columns_cis(race_cis, "race_cis")
-income_cis <- rename_columns_cis(income_cis, "income_cis")
+# Rename columns 
 tract <- rename_columns_cis(tract, "tract")
 race <- rename_columns_cis(race, "race")
 income <- rename_columns_cis(income, "income")
+income$year = as.character(income$year)
 
 # Assuming the objects are named tract, tract_cis, race, race_cis, income, and income_cis
 all <- tract %>%
-  left_join(tract_cis, by = c("statecode", "countycode")) %>%
-  left_join(race, by = c("statecode", "countycode")) %>%
-  left_join(race_cis, by = c("statecode", "countycode")) %>%
-  left_join(income, by = c("statecode", "countycode")) %>%
-  left_join(income_cis, by = c("statecode", "countycode"))
+  left_join(race, by = c("statecode", "countycode", "year")) %>%
+  left_join(income, by = c("statecode", "countycode", "year")) 
+
+
+prepandemic = all %>% filter(year == min(as.numeric(year)))
+postpandemic = all %>% filter(year == max(as.numeric(year)))
 
 ```
 
@@ -60,7 +56,8 @@ library(sf)
 # Merge data with county shapefile
 load("inputs/counties_shp.RData")
 
-map_data <- left_join(counties, all, by = c("statecode", "countycode"))
+
+map_data <- left_join(counties, prepandemic, by = c("statecode", "countycode"))
 
 # Select columns that contain "sd_bgv_wt" in their name
 sd_bgv_wt_columns <- map_data %>% 
@@ -72,7 +69,7 @@ sd_bgv_wt_columns <- map_data %>%
 
 # Set specific columns to NA if they are 0
 map_data <- map_data %>%
-  mutate(across(c(tract_cis_sd_bgv_wt, race_cis_sd_bgv_wt, income_cis_sd_bgv_wt), 
+  mutate(across(c(tract_sd_bgv_wt, race_sd_bgv_wt, income_sd_bgv_wt), 
                 ~if_else(. == 0, NA_real_, .)))
 
 
@@ -97,27 +94,29 @@ plot_map <- function(column, title, legend = TRUE) {
 
 ```
 
-# An examination of disparities in homeownership across three domains: race/ethnicity, income, and geography.
+# 
 
-#### **1. Introduction**
+# **Introduction**
 
 **Purpose of Study** 
 
 -   Compare and quantify within-county disparities in homeownership across three domains (income, race/ethnicity, and geography)
 
--   Compare and quantify the relationships between within-county disparities in homeownership across domains and county-level measures of health (premature mortality, f/p health, etc)
+-   Compare and quantify within-county disparities in homeownership over time (pre and post pandemic)
 
 **Research Questions and Hypotheses** 
 
 -   What are the magnitudes of disparity within counties for each domain?
 
--   Are there state-level differences in disparity magnitudes and correlations? What conclusions can we draw based on these state-level differences? 
+-   What are the changes in magnitudes of disparity within counties over time?
 
--   What are the relationships between disparity within counties across each domain and county-level health?
+-   Are there state-level differences in disparity magnitudes and correlations? What conclusions can we draw based on these state-level differences? 
 
 -   Something about missingness and data availability
 
-#### 2. Literature review: 
+-   Are there states or regions where trends over time are counter-intuitive?
+
+#### 2. Literature review:
 
 -   Why are disparities in homeownership important? Connection to power, wealth, structure, etc
 
@@ -131,17 +130,65 @@ plot_map <- function(column, title, legend = TRUE) {
 
 -   What does current lit say about the correlations between disparity and health?
 
-### Methods 
+-   What does current lit say about trends in homeownership pre and post pandemic?
 
-We begin by calculating homeownership rates using data from the 2018-2022 American Community Survey. The numerator is the total number of owner-occupied housing units and the denominator is the total number of occupied housing units. We calculate homeownership rates at the county-level for all US counties, at the census tract level, at the race-level within counties, and at the income-level within counties. We set homeownership rates to missing when the rate is unreliable, as indicated by a 95% confidence interval that falls outside of possible values (ie inclusive of rates that are less than 0 or greater than 1).
+### Methods
+
+We examine homeownership disparities across six overlapping five-year periods using data from the American Community Survey (ACS): 2014–2018, 2015–2019, 2016–2020, 2017–2021, 2018–2022, and 2019–2023. We chose five-year ACS estimates rather than one-year estimates because they are more reliable for small geographies and subgroups, providing greater stability and accuracy when calculating disparity metrics. These multiple time periods allow us to explore changes in disparities over time.
+
+For each time period, we begin by calculating homeownership rates. The numerator is the total number of owner-occupied housing units and the denominator is the total number of occupied housing units. We calculate homeownership rates at the county level for all U.S. counties, at the census tract level, and within counties by race and income groups. Homeownership rates are set to missing when the rate is unreliable, as indicated by a 95% confidence interval that falls outside of possible values (i.e., inclusive of rates less than 0 or greater than 1).
 
 Next we calculate within county disparities separately across race/ethnicity groups, across income groups, and across census tracts. We calculate within-county disparities using the standard deviation of population-weighted group means
 
-$$ insert equation here $$ 
+$$ insert equation here $$
 
 We chose to use the standard deviation of population-weighted group means because it produced normally distributed values and we found it to be robust to outliers. We also wanted a population-weighted group mean so that small populations would not overly skew the disparity metric.
 
-### Results 
+### Results
+
+#### What are the magnitudes of disparity within counties for each domain? 
+
+```{r}
+
+# Step 1: Calculate medians per year
+all_medians <- all %>%
+  group_by(year) %>%
+  summarize(
+    income = median(income_sd_bgv_wt, na.rm = TRUE),
+    race = median(race_sd_bgv_wt, na.rm = TRUE),
+    tract = median(tract_sd_bgv_wt, na.rm = TRUE)
+  ) %>%
+  pivot_longer(
+    cols = c(income, race, tract),
+    names_to = "disparity_type",
+    values_to = "median_disparity"
+  )
+
+# Step 2: Rename disparity types for nicer labels (optional)
+all_medians$disparity_type <- recode(all_medians$disparity_type,
+  income = "Income",
+  race = "Race/Ethnicity",
+  tract = "Census Tract"
+)
+
+# Step 3: Plot
+ggplot(all_medians, aes(x = as.numeric(year), y = median_disparity, color = disparity_type)) +
+  geom_line(size = 1.2) +
+  geom_point(size = 2) +
+  labs(
+    title = "Median Homeownership Disparities Over Time",
+    x = "Year",
+    y = "Median Disparity (Population-Weighted SD)",
+    color = "Disparity Type"
+  ) +
+  theme_minimal() +
+  theme(
+    text = element_text(size = 12),
+    legend.position = "bottom"
+  )
+```
+
+#### What are the magnitudes of disparity within counties over time? 
 
 table here of just county-level homeownership rates
 
@@ -153,9 +200,9 @@ Median homeownership rates of counties with non-missing data by income, census t
 
 ```{r}
 # Plot each map
-plot_tract <- plot_map("tract_cis_sd_bgv_wt", "SD across Tracts", legend = FALSE)
-plot_income <- plot_map("income_cis_sd_bgv_wt", "SD across Income", legend = FALSE)
-plot_race_wlegend <- plot_map("race_cis_sd_bgv_wt", "SD across Race/Ethnicities")
+plot_tract <- plot_map("tract_sd_bgv_wt", "SD across Tracts", legend = FALSE)
+plot_income <- plot_map("income_sd_bgv_wt", "SD across Income", legend = FALSE)
+plot_race_wlegend <- plot_map("race_sd_bgv_wt", "SD across Race/Ethnicities")
 
 plot_tract
 plot_income
