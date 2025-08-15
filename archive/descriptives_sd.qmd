@@ -1,5 +1,5 @@
 ---
-title: We all do better when we all do better: an examination of disparities in homeownership and how these disparities are related to health outcomes  
+title: "descriptives"
 #format: pdf
 execute:
   echo: false      # This hides the code from being printed
@@ -15,31 +15,35 @@ output:
 ```{r get data into a usable form }
 library(tidyverse)
 # Load each file and assign to a new variable name
-assign("tract", get(load("calcd_data_how/tract_cis_all_years.RData")))
-assign("race", get(load("calcd_data_how/race_cis_all_years.RData")))
-assign("income", get(load("calcd_data_how/income_cis_all_years.RData")))
+assign("tract", get(load("calcd_data_how/tract.RData")))
+assign("tract_cis", get(load("calcd_data_how/tract_cis.RData")))
+assign("race", get(load("calcd_data_how/race.RData")))
+assign("race_cis", get(load("calcd_data_how/race_cis.RData")))
+assign("income", get(load("calcd_data_how/income.RData")))
+assign("income_cis", get(load("calcd_data_how/income_cis.RData")))
 
 # Function to rename columns except the first three
 rename_columns_cis <- function(df, dataset_name) {
   df %>%
-    rename_with(~ ifelse(. %in% c("statecode", "countycode", "fipscode", "GEOID", "year"), ., paste0(dataset_name, "_", .)))
+    rename_with(~ ifelse(. %in% c("statecode", "countycode", "fipscode", "GEOID"), ., paste0(dataset_name, "_", .)))
   #, -c(statecode, countycode, fipscode, GEOID))
 }
 
-# Rename columns 
+# Rename columns for tract_cis, race_cis, and income_cis
+tract_cis <- rename_columns_cis(tract_cis, "tract_cis")
+race_cis <- rename_columns_cis(race_cis, "race_cis")
+income_cis <- rename_columns_cis(income_cis, "income_cis")
 tract <- rename_columns_cis(tract, "tract")
 race <- rename_columns_cis(race, "race")
 income <- rename_columns_cis(income, "income")
-income$year = as.character(income$year)
 
 # Assuming the objects are named tract, tract_cis, race, race_cis, income, and income_cis
 all <- tract %>%
-  left_join(race, by = c("statecode", "countycode", "year")) %>%
-  left_join(income, by = c("statecode", "countycode", "year")) 
-
-
-prepandemic = all %>% filter(year == min(as.numeric(year)))
-postpandemic = all %>% filter(year == max(as.numeric(year)))
+  left_join(tract_cis, by = c("statecode", "countycode")) %>%
+  left_join(race, by = c("statecode", "countycode")) %>%
+  left_join(race_cis, by = c("statecode", "countycode")) %>%
+  left_join(income, by = c("statecode", "countycode")) %>%
+  left_join(income_cis, by = c("statecode", "countycode"))
 
 ```
 
@@ -56,8 +60,7 @@ library(sf)
 # Merge data with county shapefile
 load("inputs/counties_shp.RData")
 
-
-map_data <- left_join(counties, prepandemic, by = c("statecode", "countycode"))
+map_data <- left_join(counties, all, by = c("statecode", "countycode"))
 
 # Select columns that contain "sd_bgv_wt" in their name
 sd_bgv_wt_columns <- map_data %>% 
@@ -69,7 +72,7 @@ sd_bgv_wt_columns <- map_data %>%
 
 # Set specific columns to NA if they are 0
 map_data <- map_data %>%
-  mutate(across(c(tract_sd_bgv_wt, race_sd_bgv_wt, income_sd_bgv_wt), 
+  mutate(across(c(tract_cis_sd_bgv_wt, race_cis_sd_bgv_wt, income_cis_sd_bgv_wt), 
                 ~if_else(. == 0, NA_real_, .)))
 
 
@@ -94,347 +97,15 @@ plot_map <- function(column, title, legend = TRUE) {
 
 ```
 
-# 
-
-# **Introduction**
-
-**Purpose of Study** 
-
--   Compare and quantify within-county disparities in homeownership across three domains (income, race/ethnicity, and geography)
-
--   Examine health outcomes in states where the magnitudes of disparities are very low and very high
-
--   we don't care about homeownership - trying to justify the measurement of disparities by tract
-
--   add nuance by comparing relative and absolute disparities
-
--   focus on "defining disparity" - further the narrative that defining the disparity is complicated ; refer to nejm paper ; choices about domains
-
--   no connection to health
-
--   if we want to capture disparities in health factors, the choice of subgroup domain is important and here's why
-
-**Research Questions and Hypotheses** 
-
--   What are the magnitudes of disparity within counties for each domain?
-
--   Are there state-level differences in disparity magnitudes and correlations? What conclusions can we draw based on these state-level differences?
-
--   Do state-level differences in disparity magnitudes correlate to health outcomes in these states? How about at the extremes?  
-
--   Something about missingness and data availability
-
-#### 2. Literature review:
-
--   Why are disparities in homeownership important? Connection to power, wealth, structure, etc
-
-    -   historical context
-
-    -   future context
-
--   What does current lit say about relative size of income versus racial disparities in home ownership
-
--   What does current lit say about the importance of measuring disparities across domains
-
--   What does current lit say about the correlations between disparity and health?
-
-### Methods
-
-We examine homeownership disparities across six overlapping five-year periods using data from the American Community Survey (ACS): 2014–2018, 2015–2019, 2016–2020, 2017–2021, 2018–2022, and 2019–2023. We chose five-year ACS estimates rather than one-year estimates because they are more reliable for small geographies and subgroups, providing greater stability and accuracy when calculating disparity metrics. These multiple time periods allow us to explore changes in disparities over time.
-
-For each time period, we begin by calculating homeownership rates. The numerator is the total number of owner-occupied housing units and the denominator is the total number of occupied housing units. We calculate homeownership rates at the county level for all U.S. counties, at the census tract level, and within counties by race and income groups. Homeownership rates are set to missing when the rate is unreliable, as indicated by a 95% confidence interval that falls outside of possible values (i.e., inclusive of rates less than 0 or greater than 1).
-
-Next we calculate within county disparities separately across race/ethnicity groups, across income groups, and across census tracts. We calculate within-county disparities using the standard deviation of population-weighted group means
-
-$$ insert equation here $$
-
-We chose to use the standard deviation of population-weighted group means because it produced normally distributed values and we found it to be robust to outliers. We also wanted a population-weighted group mean so that small populations would not overly skew the disparity metric.
-
-### Results
-
-#### What are the magnitudes of disparity within counties for each domain?
-
-```{r calculate medians for all counties over time }
-
-# Step 1: Calculate medians per year
-all_medians <- all %>%
-  group_by(year) %>%
-  summarize(
-    income = median(income_sd_bgv_wt, na.rm = TRUE),
-    race = median(race_sd_bgv_wt, na.rm = TRUE),
-    tract = median(tract_sd_bgv_wt, na.rm = TRUE)
-  ) %>%
-  pivot_longer(
-    cols = c(income, race, tract),
-    names_to = "disparity_type",
-    values_to = "median_disparity"
-  )
-
-# Step 2: Rename disparity types for nicer labels (optional)
-all_medians$disparity_type <- recode(all_medians$disparity_type,
-  income = "Income",
-  race = "Race/Ethnicity",
-  tract = "Census Tract"
-)
-
-
-```
-
-The magnitude of the median disparity across all counties is consistently higher for income than for race and tract. In 2023 the median disparity in homeownership across income groups was `r all_medians %>% filter(year == 2023 & disparity_type == "Income") %>% select(median_disparity)` while the median disparity was `r all_medians %>% filter(year == 2023 & disparity_type == "Race") %>% select(median_disparity)` across race/ethnicity groups and `r all_medians %>% filter(year == 2023 & disparity_type == "Tract") %>% select(median_disparity)` across census tracts.
-
-```{r plot of all three domains over time}
-# Step 3: Plot
-ggplot(all_medians, aes(x = as.numeric(year), y = median_disparity, color = disparity_type)) +
-  geom_line(size = 1.2) +
-  geom_point(size = 2) +
-  labs(
-    title = "Median Homeownership Disparities Over Time",
-    x = "Year",
-    y = "Median Disparity (Population-Weighted SD)",
-    color = "Disparity Type"
-  ) +
-  theme_minimal() +
-  theme(
-    text = element_text(size = 12),
-    legend.position = "bottom"
-  )
-```
-
-If we examine the within-county disparities across states, we find that these trends are less consistent. For instance, below we see that for some states, the median within-county disparity across race/ethnicity groups is higher than the median within-county disparity across income groups. This suggests that race/ethnicity is a greater predictor of homeownership than income in these states.
-
-```{r}
-# Step 1: Calculate state-level average disparities over time
-state_means <- all %>%
-  group_by(statecode) %>%
-  summarize(
-    income = mean(income_sd_bgv_wt, na.rm = TRUE),
-    race = mean(race_sd_bgv_wt, na.rm = TRUE),
-    tract = mean(tract_sd_bgv_wt, na.rm = TRUE),
-    .groups = "drop"
-  )
-
-# Step 2: Assign each state to a group based on which disparity is largest
-state_means <- state_means %>%
-  mutate(
-    dominant_disparity = case_when(
-      income > race & income > tract ~ "Income",
-      race > income & race > tract ~ "Race/Ethnicity",
-      tract > income & tract > race ~ "Census Tract",
-      TRUE ~ "Tie/Unclear"  # fallback if there's a tie
-    )
-  )
-
-# Step 3: Join group info back to the long-format dataset
-state_medians <- all %>%
-  group_by(statecode, year) %>%
-  summarize(
-    income = median(income_sd_bgv_wt, na.rm = TRUE),
-    race = median(race_sd_bgv_wt, na.rm = TRUE),
-    tract = median(tract_sd_bgv_wt, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  pivot_longer(
-    cols = c(income, race, tract),
-    names_to = "disparity_type",
-    values_to = "median_disparity"
-  ) %>%
-  mutate(
-    disparity_type = recode(disparity_type,
-                            income = "Income",
-                            race = "Race/Ethnicity",
-                            tract = "Census Tract"),
-    year = as.numeric(year)
-  ) %>%
-  left_join(state_means %>% select(statecode, dominant_disparity), by = "statecode")
-
-# Step 4: Create one plot per dominant disparity group
-disparity_groups <- unique(state_medians$dominant_disparity)
-
-plots <- map(disparity_groups, function(group_name) {
-  ggplot(
-    filter(state_medians, dominant_disparity == group_name),
-    aes(x = year, y = median_disparity, color = disparity_type, group = interaction(statecode, disparity_type))
-  ) +
-    geom_line(size = 1.1) +
-    geom_point(size = 1.8) +
-    labs(
-      title = paste("States Where", group_name, "Disparity is Largest"),
-      x = "Year",
-      y = "Median Disparity (Population-Weighted SD)",
-      color = "Disparity Type"
-    ) +
-    facet_wrap(~ statecode, ncol = 5) +
-    theme_minimal() +
-    theme(
-      text = element_text(size = 12),
-      legend.position = "bottom"
-    )
-})
-
-# Step 5: Print each plot
-#plots[[1]]  # Income-dominant
-
-plots[[3]]  # Race-dominant
-
-
-```
-
-Additionally, in the plot below, we see that for some states, the median within-county disparity across census tracts is larger then the median within-county disparity across income groups.
-
-```{r}
-plots[[2]]  # Tract-dominant 
-```
-
-## connection to policy here???
-
-referencing the lawatlas??? <https://lawatlas.org/datasets/state-fair-housing-protections-1498143743>
-
-## connection to health here???
-
-In counties where race disparities are greater than income disparities, YPLL is higher on average.
-
-```{r}
-#get most recent year of data 
-allrecent = all %>% filter(year == "2023")
-
-#add in the 2025 measures
-#from here: P:\CH-Ranking\Data\Cumulative Analytic Datasets\2025 Data 
-measures= haven::read_sas("inputs/t_measure_data.sas7bdat")
-
-measures = measures %>% filter(measure_id == 127) #YPLL 
-
-all_meas = merge(measures, allrecent, by.x = c("state_fips", "county_fips"), by.y = c("statecode", "countycode"), all.x = TRUE)
-
-
-# Select relevant columns
-cor_data <- all_meas %>%
-  select(income_sd_bgv_wt, race_sd_bgv_wt, tract_sd_bgv_wt, raw_value)
-
-# Remove rows with NA to avoid warnings
-cor_data <- na.omit(cor_data)
-
-# Plot pairwise relationships
-GGally::ggpairs(cor_data)
-
-```
-
-```{r}
-all_meas <- all_meas %>%
-  mutate(color_flag = ifelse(
-    race_sd_bgv_wt > income_sd_bgv_wt,
-    "blue", "black"
-  ))
-
-# Optional: filter out missing raw_value if needed
-all_meas_filtered <- all_meas %>%
-  filter(!is.na(raw_value))
-
-# Create vertical boxplot
-ggplot(all_meas_filtered, aes(x = color_flag, y = raw_value, fill = color_flag)) +
-  geom_boxplot(alpha = 0.8, outlier.color = "grey40") +
-  scale_fill_identity() +
-  labs(title = "YPLL by Disparity Comparison",
-       x = "Disparity Flag (Blue = Race > Income)", y = "YPLL") +
-  theme_minimal()
-```
-
-```{r plots to examine the income dominant groups in more detail }
-# Step 1: Determine dominant and minimum disparity type
-state_means <- all %>%
-  group_by(statecode) %>%
-  summarize(
-    income = mean(income_sd_bgv_wt, na.rm = TRUE),
-    race = mean(race_sd_bgv_wt, na.rm = TRUE),
-    tract = mean(tract_sd_bgv_wt, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  mutate(
-    dominant_disparity = case_when(
-      income > race & income > tract ~ "Income",
-      race > income & race > tract ~ "Race/Ethnicity",
-      tract > income & tract > race ~ "Census Tract",
-      TRUE ~ "Tie/Unclear"
-    ),
-    min_disparity = case_when(
-      income < race & income < tract ~ "Income",
-      race < income & race < tract ~ "Race/Ethnicity",
-      tract < income & tract < race ~ "Census Tract",
-      TRUE ~ "Tie/Unclear"
-    ),
-    income_group = case_when(
-      dominant_disparity == "Income" & min_disparity == "Race/Ethnicity" ~ "Income > Tract > Race",
-      dominant_disparity == "Income" & min_disparity == "Census Tract" ~ "Income > Race > Tract",
-      TRUE ~ dominant_disparity
-    )
-  )
-
-# Step 2: Join to long-format data
-state_medians <- all %>%
-  group_by(statecode, year) %>%
-  summarize(
-    income = median(income_sd_bgv_wt, na.rm = TRUE),
-    race = median(race_sd_bgv_wt, na.rm = TRUE),
-    tract = median(tract_sd_bgv_wt, na.rm = TRUE),
-    .groups = "drop"
-  ) %>%
-  pivot_longer(
-    cols = c(income, race, tract),
-    names_to = "disparity_type",
-    values_to = "median_disparity"
-  ) %>%
-  mutate(
-    disparity_type = recode(disparity_type,
-                            income = "Income",
-                            race = "Race/Ethnicity",
-                            tract = "Census Tract"),
-    year = as.numeric(year)
-  ) %>%
-  left_join(state_means %>% select(statecode, dominant_disparity, income_group), by = "statecode")
-
-# Step 3: Make plots by income subgroups
-income_subgroups <- unique(state_medians$income_group[state_medians$dominant_disparity == "Income"])
-
-income_subgroup_plots <- map(income_subgroups, function(group_name) {
-  ggplot(
-    filter(state_medians, income_group == group_name),
-    aes(x = year, y = median_disparity, color = disparity_type, group = interaction(statecode, disparity_type))
-  ) +
-    geom_line(size = 1.1) +
-    geom_point(size = 1.8) +
-    labs(
-      title = paste("States Where", group_name),
-      x = "Year",
-      y = "Median Disparity (Population-Weighted SD)",
-      color = "Disparity Type"
-    ) +
-    facet_wrap(~ statecode, ncol = 5) +
-    theme_minimal() +
-    theme(
-      text = element_text(size = 12),
-      legend.position = "bottom"
-    )
-})
-
-# Step 4: Print the two subplots
-income_subgroup_plots[[1]]  # Income > Race > Tract
-income_subgroup_plots[[2]]  # Income > Tract > Race
-```
-
-#### What are the magnitudes of disparity within counties over time?
-
-table here of just county-level homeownership rates
-
-map of county-level homeownership rates (to show missingness patterns)
-
 ## Maps with unstable estimates removed
 
-Median homeownership rates of counties with non-missing data by income, census tracts, and race/ethnicity were 73.0%, 71.7%, and 71.4%, respectively, with most missingness occuring across the western plains and central southesast. Within-county disparities were largest by income (11.9%), followed by race/ethnicity (9.5%) and census tracts (9.4%). The coasts (California and New England) appear to have high tract and income disparities but possibly lower race disparities.
+The coasts (California and New England) appear to have high tract and income disparities but possibly lower race disparities. Perhaps we should do some regional and/or state-level exploration.
 
 ```{r}
 # Plot each map
-plot_tract <- plot_map("tract_sd_bgv_wt", "SD across Tracts", legend = FALSE)
-plot_income <- plot_map("income_sd_bgv_wt", "SD across Income", legend = FALSE)
-plot_race_wlegend <- plot_map("race_sd_bgv_wt", "SD across Race/Ethnicities")
+plot_tract <- plot_map("tract_cis_sd_bgv_wt", "SD across Tracts", legend = FALSE)
+plot_income <- plot_map("income_cis_sd_bgv_wt", "SD across Income", legend = FALSE)
+plot_race_wlegend <- plot_map("race_cis_sd_bgv_wt", "SD across Race/Ethnicities")
 
 plot_tract
 plot_income
@@ -442,8 +113,6 @@ plot_race_wlegend
 ```
 
 ## Histograms of SD for Race, Income, Tract
-
-The majority of missingness occurs in rural counties where lower populations mean fewer subgroups.
 
 ```{r histograms for urb cats}
 
@@ -456,7 +125,7 @@ all_urb <- left_join(all, urbcodes, by = c("fipscode" = "FIPS"))
 
 # Set specific columns to NA if they are 0
 hist_data <- all_urb %>%
-  mutate(across(c(tract_sd_bgv_wt, race_sd_bgv_wt, income_sd_bgv_wt), 
+  mutate(across(c(tract_cis_sd_bgv_wt, race_cis_sd_bgv_wt, income_cis_sd_bgv_wt), 
                 ~if_else(. == 0, NA_real_, .)))
 
 
@@ -473,17 +142,17 @@ plot_histograms_by_rucc <- function(rucc_group) {
 
  
   # Create histograms for each category
-  hist1 <- ggplot(filtered_data, aes(x = race_sd_bgv_wt)) +
+  hist1 <- ggplot(filtered_data, aes(x = race_cis_sd_bgv_wt)) +
     geom_histogram(bins = 30, fill = "#1f77b4", alpha = 0.7) +
     theme_minimal(base_size = 14) + 
     labs(x = "Race", y = "Count")
 
-  hist2 <- ggplot(filtered_data, aes(x = tract_sd_bgv_wt)) +
+  hist2 <- ggplot(filtered_data, aes(x = tract_cis_sd_bgv_wt)) +
     geom_histogram(bins = 30, fill = "#ff7f0e", alpha = 0.7) +
     theme_minimal(base_size = 14) +
     labs(x = "Tract", y = "Count")
 
-  hist3 <- ggplot(filtered_data, aes(x = income_sd_bgv_wt)) +
+  hist3 <- ggplot(filtered_data, aes(x = income_cis_sd_bgv_wt)) +
     geom_histogram(bins = 30, fill = "#2ca02c", alpha = 0.7) +
     theme_minimal(base_size = 14) +
     labs(x = "Income", y = "Count")
@@ -505,33 +174,6 @@ plot_histograms_by_rucc <- function(rucc_group) {
 plot_histograms_by_rucc(rucc_group = "Rural")
 plot_histograms_by_rucc(rucc_group = "Urban")
 
-```
-
-percent missing
-
-```{r this doesnt work yet - goal is to add percent missing to the hist above}
-
-
-
-
-# Calculate percent missing for each group
-missing_summary <- tworucc %>%
-  group_by(RUCC_2023) %>%
-  summarise(across(where(is.numeric), ~mean(is.na(.)) * 100, .names = "missing_{.col}")) %>%
-  pivot_longer(cols = starts_with("missing_"), 
-               names_to = "variable", 
-               values_to = "percent_missing") %>%
-  mutate(variable = gsub("missing_", "", variable))
-
-# Plot
-ggplot(missing_summary, aes(x = variable, y = percent_missing, fill = rurality)) +
-  geom_col(position = "dodge") +
-  labs(title = "Percent Missing by Rurality",
-       x = "Variable",
-       y = "Percent Missing") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-  
 ```
 
 ## Correlations
