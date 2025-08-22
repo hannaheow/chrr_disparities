@@ -291,7 +291,7 @@ v153_disparity_tract_cis_all_years <- imap_dfr(
 
 # preserve tract-level rawvalues 
 
-tract_ci_all_years = lapply(names(acs_datasets), function(year) { 
+tract_level_all_years = lapply(names(acs_datasets), function(year) { 
     df = acs_datasets[[year]] %>% 
       rename(
       pop = B01001_001E,
@@ -312,7 +312,7 @@ tract_ci_all_years = lapply(names(acs_datasets), function(year) {
     return(df)
 }) 
 
-tract_ci_all_years = bind_rows(tract_ci_all_years)
+tract_level_all_years = bind_rows(tract_level_all_years)
 
 ```
 
@@ -587,7 +587,7 @@ v153_disparity_race_cis_all_years <- list(
 
 
 # to preserve rawvals at the race-group level 
-race_ci_all_years <- list(
+race_level_all_years <- list(
   race_population_all_years,
   race_numerators_all_years,
   race_denominators_all_years
@@ -1012,11 +1012,16 @@ save(v153_disparity_race_cis_all_years, file = "calcd_data_how/race_cis_all_year
 
 ```
 
-# save raw value outputs 
+# save raw value outputs(ie at the subgroup level) 
 ```{r}
-save(income_ci_all_years, file = "calcd_data_how/income_level.RData")
-save(race_ci_all_years, file = "calcd_data_how/race_level.RData") 
-save(tract_ci_all_years, file = "calcd_data_how/tract_level.RData")
+
+# combine income_level_all_years with income_household_all_years in order to get all necessary cols 
+income_ci_all_years$year = as.numeric(income_ci_all_years$year)
+income_level_all_years = income_ci_all_years %>% left_join(income_household_all_years, by = c("statecode", "countycode", "grp", "year")) 
+
+save(income_level_all_years, file = "calcd_data_how/income_level.RData")
+save(race_level_all_years, file = "calcd_data_how/race_level.RData") 
+save(tract_level_all_years, file = "calcd_data_how/tract_level.RData")
 
 ```
 
