@@ -265,6 +265,7 @@ process_acs <- function(df) {
       pop_tot = sum(pop),
       pop_counted = sum(pop_wt),
       mean = mean(rawvalue, na.rm = TRUE),
+      median = median(rawvalue, na.rm = TRUE), 
       mean_wt = stats::weighted.mean(rawvalue, pop_i, na.rm = TRUE),
       sd_s = sd(rawvalue, na.rm = TRUE),
       sd_p = sqrt((num_tract_counted - 1)/num_tract_counted) * sd(rawvalue, na.rm = TRUE),
@@ -286,6 +287,32 @@ v153_disparity_tract_cis_all_years <- imap_dfr(
   acs_datasets,
   ~process_acs(.x) %>% mutate(year = .y)
 )
+
+
+# preserve tract-level rawvalues 
+
+tract_ci_all_years = lapply(names(acs_datasets), function(year) { 
+    df = acs_datasets[[year]] %>% 
+      rename(
+      pop = B01001_001E,
+      numerator = B25003_002E,
+      denominator = B25003_001E,
+      numerator_moe = B25003_002M,
+      denominator_moe = B25003_001M
+    ) %>%
+    mutate(rawvalue = numerator / denominator,
+           se_rawvalue = sqrt((numerator_moe^2 / denominator^2) +
+                         (numerator^2 * denominator_moe^2 / denominator^4)),
+           ci_lower = rawvalue - 1.96 * se_rawvalue,
+           ci_upper = rawvalue + 1.96 * se_rawvalue,
+           rawvalue = if_else(ci_lower >= 0 & ci_upper <= 1 &
+                         !is.na(ci_lower) & !is.na(ci_upper), rawvalue, NA_real_),
+           year = as.integer(year)
+           )
+    return(df)
+}) 
+
+tract_ci_all_years = bind_rows(tract_ci_all_years)
 
 ```
 
@@ -541,6 +568,7 @@ v153_disparity_race_cis_all_years <- list(
     pop_tot = sum(pop),
     pop_counted = sum(pop_wt),
     mean = mean(rawvalue, na.rm = TRUE),
+    median = median(rawvalue, na.rm = TRUE), 
     mean_wt = weighted.mean(rawvalue, pop_i, na.rm = TRUE),
     sd_s = sd(rawvalue, na.rm = TRUE),
     sd_p = sqrt((num_grp_counted - 1) / num_grp_counted) * sd(rawvalue, na.rm = TRUE),
@@ -555,6 +583,22 @@ v153_disparity_race_cis_all_years <- list(
     theil_wt = theil_wtd_gl(rawvalue, pop_wt),
     .groups = "drop"
   )
+
+
+
+# to preserve rawvals at the race-group level 
+race_ci_all_years <- list(
+  race_population_all_years,
+  race_numerators_all_years,
+  race_denominators_all_years
+) %>%
+  purrr::reduce(left_join, by = c("year", "GEOID", "statecode", "countycode", "race")) %>%
+  mutate(
+    rawvalue = numerator / denominator,
+    ci_lower = (numerator - numerator_moe) / (denominator + denominator_moe), 
+    ci_upper = (numerator + numerator_moe) / (denominator - denominator_moe),
+    rawvalue = if_else(ci_lower < 0 | ci_upper > 1, NA_real_, rawvalue)
+    )
 ```
 
 
@@ -933,10 +977,12 @@ v153_disparity_income_cis_all_years <- dplyr::left_join(
   group_by(fipscode, year) %>% 
   mutate(hh_i = num_hh_wt / sum(num_hh_wt), .after = num_hh_wt) %>% 
   mutate(rawvalue_th = if_else(rawvalue ==0|is.nan(rawvalue), NA, rawvalue)) %>% 
-  summarise(statecode = first(statecode), countycode = first(countycode),
+  summarise(statecode = first(statecode), 
+            countycode = first(countycode),
             num_hh = sum(num_household), 
             num_hh_counted = sum(num_hh_wt),
             mean = mean(rawvalue, na.rm = TRUE),
+            median = median(rawvalue, na.rm = TRUE), 
             mean_wt = stats::weighted.mean(rawvalue, hh_i, na.rm = TRUE),
             sd_s = sd(rawvalue, na.rm = TRUE), # sample sd
             sd_p =  sqrt((num_hh_counted - 1)/num_hh_counted) * sd(rawvalue, na.rm = TRUE), # population SD
@@ -957,7 +1003,7 @@ v153_disparity_income_cis_all_years <- dplyr::left_join(
 
 
 
-# save outputs 
+# save disparity outputs 
 ```{r}
 
 save(v153_disparity_tract_cis_all_years, file = "calcd_data_how/tract_cis_all_years.RData")
@@ -966,6 +1012,13 @@ save(v153_disparity_race_cis_all_years, file = "calcd_data_how/race_cis_all_year
 
 ```
 
+# save raw value outputs 
+```{r}
+save(income_ci_all_years, file = "calcd_data_how/income_level.RData")
+save(race_ci_all_years, file = "calcd_data_how/race_level.RData") 
+save(tract_ci_all_years, file = "calcd_data_how/tract_level.RData")
+
+```
 
 
 
