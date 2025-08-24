@@ -45,6 +45,173 @@ all23 = all %>% filter(year == 2023)
 ```
 
 
+# median homeownership rates for counties with nonmissing subgroup data 
+
+this needs to be updated to be self contained (ie avoid p drive) later 
+
+```{r}
+olddata = haven::read_sas("P:/CH-Ranking/Data/2025/6 Measure Datasets/Additional Measures/v153.sas7bdat")
+
+
+
+# Filter the data for different variables where each is not NA
+filtered_race <- all23 %>%
+  filter(!is.na(race_sd_bgv_wt))
+
+filtered_income <- all23 %>%
+  filter(!is.na(income_sd_bgv_wt))
+
+
+filtered_tract <- all23 %>%
+  filter(!is.na(tract_sd_bgv_wt))
+
+# Merge olddata with filtered hist_data by statecode and countycode
+merged_race <- olddata %>%
+  inner_join(filtered_race, by = c("statecode", "countycode"))
+
+merged_income <- olddata %>%
+  inner_join(filtered_income, by = c("statecode", "countycode"))
+
+merged_tract <- olddata %>%
+  inner_join(filtered_tract, by = c("statecode", "countycode"))
+
+# Calculate the median of v153_rawvalue for each filtered dataset
+median_race <- median(merged_race$v153_rawvalue, na.rm = TRUE)
+median_income <- median(merged_income$v153_rawvalue, na.rm = TRUE)
+median_tract <- median(merged_tract$v153_rawvalue, na.rm = TRUE)
+
+library(gt)
+# Create a table using gt to display the median values
+median_table <- tibble(
+  Variable = c("v153_rawvalue with race data", "v153_rawvalue with income data", "v153_rawvalue with tract data"),
+  Median_Value = c(median_race, median_income, median_tract)
+) %>%
+  gt() %>%
+  tab_header(
+    title = "Median Values of v153_rawvalue with available data"
+  ) %>% 
+  cols_label(
+    Variable = "Variable",
+    Median_Value = "Median Value"
+  ) %>%
+  tab_style(
+    style = cell_borders(sides = "all", color = "black", weight = px(2)),
+    locations = cells_body()
+  ) %>%
+  tab_options(
+    table.width = pct(70),
+    column_labels.font.size = 14,
+    table.border.top.color = "black",
+    table.border.bottom.color = "black"
+  )
+
+# Display the table
+median_table
+
+```
+
+
+#explore race subgroup specific homeownership rates 
+```{r}
+
+load("~/chrr_disparities/calcd_data_how/race_level.RData")
+
+
+# Define the race levels with the corresponding labels
+race_levels <- c("B", "C", "D", "E", "F", "G", "H", "I")
+race_labels <- c("Black", "AIAN", "ASIAN", "NHOPI", "Other", "Two +", "White", "Hispanic")
+
+race_level23 = race_level_all_years %>% filter(year == 2023)
+
+# Boxplot for the race variable with custom labels
+ggplot(race_level23, aes(x = factor(race, levels = race_levels), y = rawvalue)) +
+  geom_boxplot() +
+  scale_x_discrete(labels = race_labels) +  # Set custom x-axis labels
+  labs(title = "Rates of homeownership across race/ethnicity subgroups",
+       x = "Race/ethnicity subgroup",
+       y = "Homeownership rate") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +# Rotate x-axis labels for readability
+  theme_minimal() 
+
+
+
+
+
+```
+
+
+
+# Income subgroup homeownership rates 
+
+```{r}
+load("~/chrr_disparities/calcd_data_how/income_level.RData")
+
+# Recode the 'grp' variable into income ranges
+income_level23 <- income_level_all_years %>%
+  filter(year == 2023) %>% 
+  mutate(income_group = case_when(
+    grp == 1 ~ 'Less than $5,000',
+    grp == 1 ~ '$5,000 to $9,999',
+    grp == 2 ~ '$10,000 to $14,999',
+    grp == 3 ~ '$15,000 to $19,999',
+    grp == 3 ~ '$20,000 to $24,999',
+    grp == 4 ~ '$25,000 to $34,999',
+    grp == 5 ~ '$35,000 to $49,999',
+    grp == 6 ~ '$50,000 to $74,999',
+    grp == 7 ~ '$75,000 to $99,999',
+    grp == 8 ~ '$100,000 to $149,999',
+    grp == 9 ~ '$150,000 or more'
+  ))
+
+# Boxplot for the new 'income_group' variable
+ggplot(income_level23, aes(x = factor(income_group, 
+                                              levels = c('Less than $10,000', 
+                                                         '$10,000 to $14,999', 
+                                                         '$15,000 to $24,999', 
+                                                         '$25,000 to $34,999', 
+                                                         '$35,000 to $49,999', 
+                                                         '$50,000 to $74,999', 
+                                                         '$75,000 to $99,999', 
+                                                         '$100,000 to $149,999', 
+                                                         '$150,000 or more')),
+                                   y = rawvalue)) +
+  geom_boxplot() +
+  labs(title = "Rates of homeownership across income groups",
+       x = "Income Group",
+       y = "Homeownership rate") +
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) # Rotate x-axis labels for readability
+```
+
+# tract RUCC code and homeownership rates 
+ 
+```{r}
+load("~/chrr_disparities/calcd_data_how/tract_level.RData")
+
+urbcodes = readxl::read_xlsx("inputs/Ruralurbancontinuumcodes2023.xlsx")
+urbcodes <- urbcodes %>% mutate(FIPS = as.character(FIPS), # Ensure numeric for join
+                                ShortDesc = sub(" -.*", "", Description))  # create metro/nonmetro variable 
+
+tract_level23 = tract_level_all_years %>% filter(year ==2023) %>% 
+  left_join(., urbcodes, by = c("fipscode" = "FIPS"))
+
+
+ggplot(tract_level23, aes(x = as.factor(RUCC_2023), y = rawvalue)) +
+  geom_boxplot() +  # Boxplot
+  labs(title = "Tract-level rates of homeownership across urbanicity categories",
+       x = "RUCC Code where 1 is the most urban and 9 is most rural",  # x-axis label
+       y = "Homeownership rate") +  # y-axis label
+  theme_minimal() +  # Clean theme for better presentation
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))  # Rotate x-axis labels
+
+
+
+```
+
+
+
+
+# Median disparities 
 Across US counties, the median county-level disparity in homeownership rates across income groups is 
 
 ```{r}
@@ -67,7 +234,7 @@ sum(is.na(all$race_sd_bgv_wt))
 
 There are some differences across urbanicity categories 
 
-```{r make bar plot by urb category - can change from two to nine if needed }
+```{r disparities by RUCC Category bar plot  }
 urbcodes = readxl::read_xlsx("inputs/Ruralurbancontinuumcodes2023.xlsx")
 urbcodes <- urbcodes %>% mutate(FIPS = as.numeric(FIPS), # Ensure numeric for join
                                 ShortDesc = sub(" -.*", "", Description))  # create metro/nonmetro variable 
@@ -86,7 +253,7 @@ library(forcats)
 
 # Summarize the three variables into long format
 plot_data <- all_urb %>%
-  group_by(ShortDesc) %>%
+  group_by(Description) %>%
   summarize(
     Income = median(income_sd_bgv_wt, na.rm = TRUE),
     Race   = median(race_sd_bgv_wt, na.rm = TRUE),
@@ -98,7 +265,7 @@ plot_data <- all_urb %>%
     values_to = "MedianDisparity"
   )
 
-ggplot(plot_data, aes(x = MedianDisparity, y = ShortDesc, fill = Measure)) +
+ggplot(plot_data, aes(x = MedianDisparity, y = Description, fill = Measure)) +
   geom_col(position = "dodge") +
   labs(
     title = "Disparities by RUCC Category",
@@ -137,69 +304,6 @@ print(corr_results$ci)
 
 # correlations by group 
 
-```{r}
-library(psych)
-library(dplyr)
-
-# Initialize empty data frame to store results
-cor_summary <- data.frame(
-  RUCC_2023 = character(),
-  var1 = character(),
-  var2 = character(),
-  r = numeric(),
-  ci_lower = numeric(),
-  ci_upper = numeric(),
-  stringsAsFactors = FALSE
-)
-
-# Loop through each group
-for (group in unique(all_urb$RUCC_2023)) {
-  
-  # Subset and clean
-  group_data <- subset(all_urb, RUCC_2023 == group)
-  vars <- na.omit(group_data[, c("tract_sd_bgv_wt", "income_sd_bgv_wt", "race_sd_bgv_wt")])
-  
-  if (nrow(vars) < 3) next  # skip if not enough data
-  
-  # Correlation with CI
-  corr <- corr.test(vars, method = "pearson", adjust = "none", ci = TRUE)
-  
-  # Extract r, ci lower, ci upper
-  r <- corr$r
-  ci_lower <- corr$ci.lower
-  ci_upper <- corr$ci.upper
-  
-  var_names <- colnames(r)
-  
-  # Loop through upper triangle to extract pairs
-  for (i in 1:(ncol(r) - 1)) {
-    for (j in (i + 1):ncol(r)) {
-      cor_summary <- rbind(cor_summary, data.frame(
-        RUCC_2023 = group,
-        var1 = var_names[i],
-        var2 = var_names[j],
-        r = round(r[i, j], 3),
-        ci_lower = round(ci_lower[i, j], 3),
-        ci_upper = round(ci_upper[i, j], 3)
-      ))
-    }
-  }
-}
-
-# Optional: add formatted column
-cor_summary <- cor_summary %>%
-  mutate(r_ci = paste0(r, " (", ci_lower, ", ", ci_upper, ")"))
-
-# View table
-print(cor_summary)
-
-# Optional: write to CSV
-# write.csv(cor_summary, "grouped_correlations.csv", row.names = FALSE)
-
-```
-
-
-
 ```{r CORRELATIONS BY URB GROUP}
 library(dplyr)
 library(tidyr)
@@ -226,33 +330,304 @@ correlations_by_group <- all_urb %>%
 ```
 
 
-```{r correlations by group data visualized }
+```{r correlations by urb group visualized }
 
-ggplot(correlations_by_group, aes(x = Var1, y = Var2, fill = Correlation)) +
-  geom_tile(color = "white") +
-  facet_wrap(~ RUCC_2023) +
-  scale_fill_gradient2(
-    low = "blue", mid = "white", high = "red", 
-    midpoint = 0, limit = c(-1, 1), 
-    name = "Correlation"
+# Define strength levels for coloring
+corr_by_group_plot <- correlations_by_group %>%
+  filter(Var1 != Var2) %>% #remove self correlations
+  mutate(
+    strength = case_when(
+      abs(Correlation) >= 0.5 ~ "Strong",
+      abs(Correlation) >= 0.3 ~ "Moderate",
+      TRUE ~ "Weak"
+    ),
+    strength = factor(strength, levels = c("Strong", "Moderate", "Weak")),  # custom order
+    Var1 = recode(Var1,
+                  income_sd_bgv_wt = "Income",
+                  race_sd_bgv_wt = "Race",
+                  tract_sd_bgv_wt = "Tract"),
+    Var2 = recode(Var2,
+                  income_sd_bgv_wt = "Income",
+                  race_sd_bgv_wt = "Race",
+                  tract_sd_bgv_wt = "Tract")
+  )%>%
+  rowwise() %>%
+  mutate(pair = paste(sort(c(Var1, Var2)), collapse = "_")) %>%
+  ungroup() %>%
+  distinct(RUCC_2023, pair, .keep_all = TRUE)
+
+# Plot
+ggplot(corr_by_group_plot, aes(x = as.factor(RUCC_2023), y = Correlation, color = strength)) +
+  geom_point(size = 3, alpha = 0.8) +
+  facet_grid(Var1 ~ Var2, drop = TRUE) +
+  scale_color_manual(
+    values = c("Strong" = "#E41A1C", "Moderate" = "#377EB8", "Weak" = "#4DAF4A"),
+    name = "Correlation Strength"
   ) +
+  theme_minimal() +
   labs(
-    title = "Correlation Between Disparity Measures by Group",
-    x = NULL, y = NULL
+    title = "Correlations between Disparity Domains by RUCC Classification",
+    x = "RUCC classification (1 = most urban, 9 = most rural)",
+    y = "Correlation of Disparity Domain"
   ) +
-  theme_minimal(base_size = 12) +
+  theme(
+    axis.text.x = element_text(angle = 0, hjust = 0.5),
+    strip.text = element_text(face = "bold")
+  )
+
+
+
+
+
+```
+
+
+### State level correlation 
+
+```{r}
+correlations_by_state <- all_urb %>%
+  select(statecode, income_sd_bgv_wt, race_sd_bgv_wt, tract_sd_bgv_wt) %>%
+  group_by(statecode) %>%
+  filter(!is.na(income_sd_bgv_wt) & !is.na(race_sd_bgv_wt) & !is.na(tract_sd_bgv_wt)) %>%
+  group_split() %>%
+  map_df(function(group_df) {
+    cor_matrix <- cor(group_df[, c("income_sd_bgv_wt", "race_sd_bgv_wt", "tract_sd_bgv_wt")], use = "complete.obs")
+    
+    tidy_cor <- as.data.frame(as.table(cor_matrix)) %>%
+      filter(Var1 != Var2) %>%
+      mutate(statecode = unique(group_df$statecode)) %>%
+      select(statecode, Var1, Var2, Correlation = Freq)
+    
+    return(tidy_cor)
+  })
+
+
+# Prepare for plotting
+corr_by_state_plot <- correlations_by_state %>%
+  filter(Var1 != Var2) %>%
+  mutate(
+    strength = case_when(
+      abs(Correlation) >= 0.5 ~ "Strong",
+      abs(Correlation) >= 0.3 ~ "Moderate",
+      TRUE ~ "Weak"
+    ),
+    strength = factor(strength, levels = c("Strong", "Moderate", "Weak")),
+    Var1 = recode(Var1,
+                  income_sd_bgv_wt = "Income",
+                  race_sd_bgv_wt = "Race",
+                  tract_sd_bgv_wt = "Tract"),
+    Var2 = recode(Var2,
+                  income_sd_bgv_wt = "Income",
+                  race_sd_bgv_wt = "Race",
+                  tract_sd_bgv_wt = "Tract")
+  ) %>%
+  rowwise() %>%
+  mutate(pair = paste(sort(c(Var1, Var2)), collapse = "_")) %>%
+  ungroup() %>%
+  distinct(statecode, pair, .keep_all = TRUE)
+
+# Get average correlation per state
+top_bottom_states <- corr_by_state_plot %>%
+  group_by(statecode) %>%
+  summarise(avg_corr = mean(abs(Correlation), na.rm = TRUE)) %>%
+  arrange(desc(avg_corr)) %>%
+  slice(c(1:5, (n() - 4):n())) %>%
+  pull(statecode)
+
+# Filter to those 10 states
+corr_by_state_plot_filtered <- corr_by_state_plot %>%
+  filter(statecode %in% top_bottom_states)
+
+
+library(ggplot2)
+
+ggplot(corr_by_state_plot_filtered, aes(x = statecode, y = Correlation, color = strength)) +
+  geom_point(size = 3, alpha = 0.8) +
+  facet_grid(Var1 ~ Var2, drop = TRUE) +
+  scale_color_manual(
+    values = c("Strong" = "#E41A1C", "Moderate" = "#377EB8", "Weak" = "#4DAF4A"),
+    name = "Correlation Strength"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Correlations Between Disparity Domains in Top and Bottom States",
+    subtitle = "Based on average absolute correlation between Income, Race, and Tract disparity scores",
+    x = "State Code",
+    y = "Correlation of Disparity Domains"
+  ) +
   theme(
     axis.text.x = element_text(angle = 45, hjust = 1),
-    panel.grid = element_blank(),
-    strip.text = element_text(size = 10, face = "bold")
+    strip.text = element_text(face = "bold")
   )
 
 ```
 
 
+###################################################
+
+# Data coverage 
+
+Missingness in rawvalues  
+
+
+```{r}
+# Percent missing – Individuals
+pm_indiv_race <- 1 - (race_level23 %>% filter(!is.na(rawvalue)) %>% summarize(sum(pop)) %>% pull()) / sum(race_level23$pop)
+pm_indiv_tract <- 1 - (tract_level23 %>% filter(!is.na(rawvalue)) %>% summarize(sum(pop)) %>% pull()) / sum(tract_level23$pop)
+pm_indiv_income <- 1 - (income_level23 %>% filter(!is.na(rawvalue)) %>% summarize(sum(num_household)) %>% pull()) / sum(income_level23$num_household)
+
+# Percent missing – Groups
+pm_group_race <- 1 - sum(!is.na(race_level23$rawvalue)) / nrow(race_level23)
+pm_group_tract <- 1 - sum(!is.na(tract_level23$rawvalue)) / length(unique(tract_level23$GEOID))
+pm_group_income <- 1 - sum(!is.na(income_level23$rawvalue)) / nrow(income_level23)
+
+# Create data frame
+missing_summary <- data.frame(
+  Domain = c("Race/Ethnicity", "Census Tract", "Household Income Categories"),
+  pminds = scales::percent(c(pm_indiv_race, pm_indiv_income, pm_indiv_tract), accuracy = 0.1),
+  pmgroups = scales::percent(c(pm_group_race, pm_group_income, pm_group_tract ), accuracy = 0.1)
+)
+
+# Create gt table
+missing_summary %>%
+  gt() %>%
+  tab_header(
+    title = "Summary of Missing Data by Domain",
+    subtitle = "Percent missing for individuals (from ACS) and groups (excluded due to unstable estimates)"
+  ) %>%
+  cols_label(
+    Domain = "Domain",
+    pminds = "Individuals (%)",
+    pmgroups = "Groups (%)"
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = c(pminds, pmgroups)
+  )# %>%
+  #tab_source_note(
+  #  source_note = "Note: 'Individuals' refers to people or households with missing ACS data; 'Groups' refers 
+  #to categories excluded due to unstable homeownership rate estimates."
+  #)
+
+```
 
 
 
+# Correlations in missingness 
+```{r}
+
+library(psych)
+
+# Step 1: Create missingness indicator matrix (1 = missing, 0 = not missing)
+miss_matrix <- is.na(all23[, c("tract_sd_bgv_wt", "race_sd_bgv_wt", "income_sd_bgv_wt")]) * 1
+
+# Step 2: Get correlations with confidence intervals
+miss_corr <- corr.test(miss_matrix, method = "pearson", ci = TRUE, adjust = "none")
+
+# View correlation matrix
+print(miss_corr$r)
+
+# View confidence intervals
+print(miss_corr$ci)  # Or miss_corr$ci.lower and miss_corr$ci.upper
+
+```
+# correlations in missingness by RUCC code 
+
+```{r missingness correlation by RUCC classification}
+library(dplyr)
+library(purrr)
+library(psych)
+
+# Variables to check for missingness
+vars <- c("tract_sd_bgv_wt", "race_sd_bgv_wt", "income_sd_bgv_wt")
+
+# Loop through groups and compute correlation of missingness
+missing_corr_by_group <- all_urb %>%
+  select(RUCC_2023, all_of(vars)) %>%
+  group_by(RUCC_2023) %>%
+  group_split() %>%
+  map_df(function(group_df) {
+    
+    # Get group label
+    group_val <- unique(group_df$RUCC_2023)
+    
+    # Create missingness indicator matrix
+    miss_mat <- is.na(group_df[, vars]) * 1
+    
+    # Skip if not enough rows
+    if (nrow(miss_mat) < 3) return(NULL)
+    
+    # Correlation with confidence intervals
+    corr_obj <- corr.test(miss_mat, method = "pearson", ci = TRUE, adjust = "none") 
+     # Extract matrices
+    r_mat <- corr_obj$r
+    lower_mat <- corr_obj$ci.lower
+    upper_mat <- corr_obj$ci.upper
+    
+    # Get unique variable pairs
+    pairs <- which(upper.tri(r_mat), arr.ind = TRUE)
+    
+    # Assemble results
+    data.frame(
+      RUCC_2023 = group_val,
+      Var1 = rownames(r_mat)[pairs[, 1]],
+      Var2 = colnames(r_mat)[pairs[, 2]],
+      r = round(r_mat[pairs], 3))
+     # CI_lower = round(lower_mat[pairs], 3),
+    #  CI_upper = round(upper_mat[pairs], 3),
+    #  r_ci = paste0(round(r_mat[pairs], 3), 
+    #                " (", round(lower_mat[pairs], 3), 
+    #                ", ", round(upper_mat[pairs], 3), ")")
+    
+  })
+
+
+
+
+# Define strength levels for coloring
+missing_corr_by_group_plot <- missing_corr_by_group %>%
+  filter(Var1 != Var2) %>% #remove self correlations
+  mutate(
+    strength = case_when(
+      abs(r) >= 0.5 ~ "Strong",
+      abs(r) >= 0.3 ~ "Moderate",
+      TRUE ~ "Weak"
+    ),
+    strength = factor(strength, levels = c("Strong", "Moderate", "Weak")),  # custom order
+    Var1 = recode(Var1,
+                  income_sd_bgv_wt = "Income",
+                  race_sd_bgv_wt = "Race",
+                  tract_sd_bgv_wt = "Tract"),
+    Var2 = recode(Var2,
+                  income_sd_bgv_wt = "Income",
+                  race_sd_bgv_wt = "Race",
+                  tract_sd_bgv_wt = "Tract")
+  )%>%
+  rowwise() %>%
+  mutate(pair = paste(sort(c(Var1, Var2)), collapse = "_")) %>%
+  ungroup() %>%
+  distinct(RUCC_2023, pair, .keep_all = TRUE)
+
+# Plot
+ggplot(missing_corr_by_group_plot, aes(x = as.factor(RUCC_2023), y = r, color = strength)) +
+  geom_point(size = 3, alpha = 0.8) +
+  facet_grid(Var1 ~ Var2, drop = TRUE) +
+  scale_color_manual(
+    values = c("Strong" = "#E41A1C", "Moderate" = "#377EB8", "Weak" = "#4DAF4A"),
+    name = "Correlation Strength"
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Missingness Correlation by RUCC Classification",
+    x = "RUCC classification (1 = most urban, 9 = most rural)",
+    y = "Correlation of Missingness"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 0, hjust = 0.5),
+    strip.text = element_text(face = "bold")
+  )
+
+```
 
 
 
