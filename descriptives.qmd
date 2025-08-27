@@ -383,7 +383,7 @@ ggplot(corr_by_group_plot, aes(x = as.factor(RUCC_2023), y = Correlation, color 
 
 
 ### State level correlation 
-
+not currently in use 
 ```{r}
 correlations_by_state <- all_urb %>%
   select(statecode, income_sd_bgv_wt, race_sd_bgv_wt, tract_sd_bgv_wt) %>%
@@ -426,22 +426,32 @@ corr_by_state_plot <- correlations_by_state %>%
   ungroup() %>%
   distinct(statecode, pair, .keep_all = TRUE)
 
-# Get average correlation per state
-top_bottom_states <- corr_by_state_plot %>%
-  group_by(statecode) %>%
-  summarise(avg_corr = mean(abs(Correlation), na.rm = TRUE)) %>%
-  arrange(desc(avg_corr)) %>%
-  slice(c(1:5, (n() - 4):n())) %>%
+# Get top 5 unique states with highest absolute correlations
+top_states <- corr_by_state_plot %>%
+  arrange(desc(Correlation)) %>%
+  distinct(statecode, .keep_all = TRUE) %>%
+  slice_head(n = 5) %>%
   pull(statecode)
 
-# Filter to those 10 states
-corr_by_state_plot_filtered <- corr_by_state_plot %>%
+# Get bottom 5 unique states with lowest absolute correlations
+bottom_states <- corr_by_state_plot %>%
+  arrange(Correlation) %>%
+  distinct(statecode, .keep_all = TRUE) %>%
+  slice_head(n = 5) %>%
+  pull(statecode)
+
+# Combine them
+top_bottom_states <- c(top_states, bottom_states)
+
+
+# Filter data to include only top and bottom states
+corr_top_bottom_filtered <- corr_by_state_plot %>%
   filter(statecode %in% top_bottom_states)
 
 
 library(ggplot2)
 
-ggplot(corr_by_state_plot_filtered, aes(x = statecode, y = Correlation, color = strength)) +
+ggplot(corr_top_bottom_filtered, aes(x = statecode, y = Correlation, color = strength)) +
   geom_point(size = 3, alpha = 0.8) +
   facet_grid(Var1 ~ Var2, drop = TRUE) +
   scale_color_manual(
@@ -461,6 +471,23 @@ ggplot(corr_by_state_plot_filtered, aes(x = statecode, y = Correlation, color = 
   )
 
 ```
+
+```{r}
+# Calculate standard deviation of correlation values per state
+state_corr_variability <- corr_by_state_plot %>%
+  group_by(statecode) %>%
+  summarise(
+    sd_corr = sd(Correlation, na.rm = TRUE),
+    range_corr = max(Correlation, na.rm = TRUE) - min(Correlation, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(range_corr))  # or arrange(desc(range_corr)) if you prefer range
+
+# View top states with most dissimilar correlations
+head(state_corr_variability, 10)
+
+```
+
 
 
 ###################################################
@@ -483,7 +510,7 @@ pm_group_income <- 1 - sum(!is.na(income_level23$rawvalue)) / nrow(income_level2
 
 # Create data frame
 missing_summary <- data.frame(
-  Domain = c("Race/Ethnicity", "Census Tract", "Household Income Categories"),
+  Domain = c("Race/Ethnicity", "Household Income Categories", "Census Tract"),
   pminds = scales::percent(c(pm_indiv_race, pm_indiv_income, pm_indiv_tract), accuracy = 0.1),
   pmgroups = scales::percent(c(pm_group_race, pm_group_income, pm_group_tract ), accuracy = 0.1)
 )
@@ -509,6 +536,47 @@ missing_summary %>%
   #to categories excluded due to unstable homeownership rate estimates."
   #)
 
+```
+
+# Missingness at the county level 
+ 
+```{r}
+sum(!is.na(all_urb$race_sd_bgv_wt))/nrow(all23)
+sum(!is.na(all_urb$income_sd_bgv_wt))/nrow(all23)
+sum(!is.na(all_urb$tract_sd_bgv_wt))/nrow(all23)
+```
+
+Across RUCC 
+```{r}
+# calculate percent missing by RUCC
+rucc_miss <- all_urb %>%
+  group_by(Description) %>%
+  summarise(
+    Race    = mean(is.na(race_sd_bgv_wt)),
+    Income  = mean(is.na(income_sd_bgv_wt)),
+    Tract   = mean(is.na(tract_sd_bgv_wt)),
+    .groups = "drop"
+  ) %>%
+  pivot_longer(cols = c(Race, Income, Tract),
+               names_to = "Domain",
+               values_to = "PercentMissing") 
+
+
+# plot with RUCC on y-axis and three bars per RUCC
+ggplot(rucc_miss, aes(x = PercentMissing, y = Description, fill = Domain)) +
+  geom_col(position = "dodge") +
+  scale_x_continuous(labels = scales::percent) +
+  labs(
+    title = "Missing County-level Disparities by RUCC Category",
+    x = "Percent Missing",
+    y = "",
+   # fill = "Variable"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    legend.position = "bottom",
+    axis.text.y = element_text(size = 9)
+  )
 ```
 
 
