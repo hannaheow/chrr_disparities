@@ -150,11 +150,11 @@ load("~/chrr_disparities/calcd_data_how/income_level.RData")
 income_level23 <- income_level_all_years %>%
   filter(year == 2023) %>% 
   mutate(income_group = case_when(
-    grp == 1 ~ 'Less than $5,000',
-    grp == 1 ~ '$5,000 to $9,999',
+    grp == 1 ~ 'Less than $10,000',
+    #grp == 1 ~ '$5,000 to $9,999',
     grp == 2 ~ '$10,000 to $14,999',
-    grp == 3 ~ '$15,000 to $19,999',
-    grp == 3 ~ '$20,000 to $24,999',
+    grp == 3 ~ '$15,000 to $24,999',
+    #grp == 3 ~ '$20,000 to $24,999',
     grp == 4 ~ '$25,000 to $34,999',
     grp == 5 ~ '$35,000 to $49,999',
     grp == 6 ~ '$50,000 to $74,999',
@@ -207,7 +207,135 @@ ggplot(tract_level23, aes(x = as.factor(RUCC_2023), y = rawvalue)) +
 
 
 ```
+one table with race, income, and rucc 
+```{r}
+library(dplyr)
 
+# --- Race summary ---
+race_summary <- race_level23 %>%
+  group_by(race) %>%
+  summarise(
+    N = sum(!is.na(rawvalue)),
+    median = median(rawvalue, na.rm = TRUE),
+    min = min(rawvalue, na.rm = TRUE),
+    max = max(rawvalue, na.rm = TRUE),
+    sd = sd(rawvalue, na.rm = TRUE)
+  ) %>%
+  mutate(
+    median = round(median, 3),
+    sd = round(sd, 3),
+    min_max = paste0("(", round(min, 3), ", ", round(max, 3), ")"),
+    subgroup_type = "Race/Ethnicity",
+    subgroup = recode(race,
+                      "B" = "Black", "C" = "AIAN", "D" = "Asian",
+                      "E" = "NHOPI", "F" = "Other", "G" = "Two +",
+                      "H" = "White", "I" = "Hispanic")
+  ) %>%
+  select(subgroup_type, subgroup, N, median, min_max, sd)
+
+
+# --- Income summary ---
+income_summary <- income_level23 %>%
+  group_by(income_group) %>%
+  summarise(
+    N = sum(!is.na(rawvalue)),
+    median = median(rawvalue, na.rm = TRUE),
+    min = min(rawvalue, na.rm = TRUE),
+    max = max(rawvalue, na.rm = TRUE),
+    sd = sd(rawvalue, na.rm = TRUE)
+  ) %>%
+  mutate(
+    median = round(median, 3),
+    sd = round(sd, 3),
+    min_max = paste0("(", round(min, 3), ", ", round(max, 3), ")"),
+    subgroup_type = "Income",
+    subgroup = factor(
+      income_group,
+      levels = c('Less than $10,000', 
+                 '$10,000 to $14,999', 
+                 '$15,000 to $24,999', 
+                 '$25,000 to $34,999', 
+                 '$35,000 to $49,999', 
+                 '$50,000 to $74,999', 
+                 '$75,000 to $99,999', 
+                 '$100,000 to $149,999', 
+                 '$150,000 or more')
+    )
+  ) %>%
+  arrange(subgroup) %>%
+  select(subgroup_type, subgroup, N, median, min_max, sd)
+
+
+# --- RUCC summary ---
+rucc_summary <- tract_level23 %>%
+  group_by(Description) %>%
+  summarise(
+    N = sum(!is.na(rawvalue)),
+    median = median(rawvalue, na.rm = TRUE),
+    min = min(rawvalue, na.rm = TRUE),
+    max = max(rawvalue, na.rm = TRUE),
+    sd = sd(rawvalue, na.rm = TRUE)
+  ) %>%
+  mutate(
+    median = round(median, 3),
+    sd = round(sd, 3),
+    min_max = paste0("(", round(min, 3), ", ", round(max, 3), ")"),
+    subgroup_type = "RUCC",
+    subgroup = as.character(Description)
+  ) %>%
+  #arrange(as.numeric(subgroup)) %>%
+  select(subgroup_type, subgroup, N, median, min_max, sd)
+
+
+# --- Combine all into one table ---
+all_subgroup_summary <- bind_rows(race_summary, income_summary, rucc_summary)
+
+
+# make it pretty
+
+library(gt)
+
+all_subgroup_summary %>%
+  gt(rowname_col = "subgroup") %>%
+  tab_header(
+    title = "Homeownership Rate Summary by Subgroup",
+    subtitle = "Median, range, and variation across race/ethnicity, income, and RUCC"
+  ) %>%
+  cols_label(
+    subgroup_type = "Subgroup Type",
+    subgroup = "Subgroup",
+    N = "N counties with available data",
+    median = "Median",
+    min_max = "Range (min, max)",
+    sd = "Std. Dev."
+  ) %>%
+  fmt_number(
+    columns = c(median, sd),
+    decimals = 3
+  ) %>%
+  tab_options(
+    table.border.top.style = "solid",
+    table.border.bottom.style = "solid",
+    column_labels.font.weight = "bold",
+    data_row.padding = px(6)
+  ) %>%
+  tab_style(
+    style = list(
+      cell_fill(color = "#f9f9f9"),
+      cell_borders(sides = "bottom", color = "grey80")
+    ),
+    locations = cells_body()
+  ) %>%
+  tab_spanner(
+    label = "Homeownership Rates",
+    columns = c(median, min_max, sd)
+  ) %>%
+  opt_table_font(
+    font = list(google_font("Lato"), default_fonts())
+  )
+
+
+```
 
 
 
