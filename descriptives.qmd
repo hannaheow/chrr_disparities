@@ -111,6 +111,8 @@ median_table
 ```
 
 
+
+
 #explore race subgroup specific homeownership rates 
 ```{r}
 
@@ -207,7 +209,53 @@ ggplot(tract_level23, aes(x = as.factor(RUCC_2023), y = rawvalue)) +
 
 
 ```
-one table with race, income, and rucc 
+
+
+# box-whisker plot with y axis as disparity and x axis is domain 
+
+```{r}
+library(dplyr)
+library(ggplot2)
+
+load("~/chrr_disparities/calcd_data_how/income_cis_all_years.RData")
+load("~/chrr_disparities/calcd_data_how/race_cis_all_years.RData")
+load("~/chrr_disparities/calcd_data_how/tract_cis_all_years.RData")
+
+# Step 1–3: Filter, select, rename, add domain
+income_county <- income %>%
+  filter(year == 2023) %>%
+  select(statecode, countycode, rawvalue = income_sd_bgv_wt) %>%
+  mutate(domain = "Income") %>% filter(rawvalue!=0)
+
+tract_county <- tract %>%
+  filter(year == 2023) %>%
+  select(statecode, countycode, rawvalue = tract_sd_bgv_wt) %>%
+  mutate(domain = "Tract")%>% filter(rawvalue!=0)
+
+race_county <- race %>%
+  filter(year == 2023) %>%
+  select(statecode, countycode, rawvalue = race_sd_bgv_wt) %>%
+  mutate(domain = "Race")%>% filter(rawvalue!=0)
+
+# Step 4: Combine
+all_county <- bind_rows(income_county, tract_county, race_county)
+
+# Step 5: Boxplot
+ggplot(all_county, aes(x = domain, y = rawvalue, fill = domain)) +
+  geom_violin()+#outlier.alpha = 0.4) +
+  labs(
+    x = "Domain of Disparity",
+    y = "Magnitude of Disparity",
+    title = "County-Level Disparities (2023)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+```
+
+
+
+# one table with race, income, and rucc 
 ```{r}
 library(dplyr)
 
