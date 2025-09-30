@@ -243,6 +243,44 @@ all_county <- bind_rows(income_county, tract_county, race_county)
 # Step 5: Boxplot
 ggplot(all_county, aes(x = domain, y = rawvalue, fill = domain)) +
   geom_violin()+#outlier.alpha = 0.4) +
+  geom_boxplot(width = 0.15, outlier.shape = NA, fill = "white", alpha = 0.6) +
+  labs(
+    x = "Domain of Disparity",
+    y = "Magnitude of Disparity",
+    title = "County-Level Disparities (2023)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+```
+```{r raincloud plot }
+library(ggplot2)
+library(ggdist)
+
+ggplot(all_county, aes(x = domain, y = rawvalue, fill = domain, color = domain)) +
+  # Half violin (distribution)
+  stat_halfeye(
+    adjust = 0.5, 
+    width = 0.6, 
+    .width = 0, 
+    alpha = 0.3, 
+    justification = -0.3, 
+    point_colour = NA
+  ) +
+  # Boxplot shifted slightly
+  geom_boxplot(
+    width = 0.15, 
+    outlier.shape = NA, 
+    alpha = 0.6, 
+    position = position_nudge(x = -0.15)
+  ) +
+  # Optional raw points (the "cloud")
+  geom_point(
+    alpha = 0.3, 
+    size = 1,  
+    position = position_jitter(width = 0.2, seed = 123), 
+    aes(x = as.numeric(domain) + 0.2)
+  ) +
   labs(
     x = "Domain of Disparity",
     y = "Magnitude of Disparity",
