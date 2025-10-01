@@ -597,7 +597,7 @@ ggplot(corr_by_group_plot, aes(x = as.factor(RUCC_2023), y = Correlation, color 
 
 
 ### State level correlation 
-not currently in use 
+
 ```{r}
 correlations_by_state <- all_urb %>%
   select(statecode, income_sd_bgv_wt, race_sd_bgv_wt, tract_sd_bgv_wt) %>%
@@ -609,8 +609,19 @@ correlations_by_state <- all_urb %>%
     
     tidy_cor <- as.data.frame(as.table(cor_matrix)) %>%
       filter(Var1 != Var2) %>%
-      mutate(statecode = unique(group_df$statecode)) %>%
-      select(statecode, Var1, Var2, Correlation = Freq)
+      mutate(
+        statecode = unique(group_df$statecode),
+        type = case_when(
+          (Var1 == "race_sd_bgv_wt" & Var2 == "income_sd_bgv_wt") | 
+            (Var1 == "income_sd_bgv_wt" & Var2 == "race_sd_bgv_wt") ~ "race_income",
+          (Var1 == "tract_sd_bgv_wt" & Var2 == "income_sd_bgv_wt") | 
+            (Var1 == "income_sd_bgv_wt" & Var2 == "tract_sd_bgv_wt") ~ "tract_income",
+          (Var1 == "race_sd_bgv_wt" & Var2 == "tract_sd_bgv_wt") | 
+            (Var1 == "tract_sd_bgv_wt" & Var2 == "race_sd_bgv_wt") ~ "race_tract",
+          TRUE ~ NA_character_
+        )
+      ) %>%
+      select(statecode, Var1, Var2, Correlation = Freq, type)
     
     return(tidy_cor)
   })
@@ -640,19 +651,24 @@ corr_by_state_plot <- correlations_by_state %>%
   ungroup() %>%
   distinct(statecode, pair, .keep_all = TRUE)
 
-# Get top 5 unique states with highest absolute correlations
+# Get top 3 states by pair (highest correlations)
 top_states <- corr_by_state_plot %>%
+  group_by(type) %>%
   arrange(desc(Correlation)) %>%
   distinct(statecode, .keep_all = TRUE) %>%
-  slice_head(n = 5) %>%
+  slice_head(n = 3) %>%
+  ungroup() %>% 
   pull(statecode)
 
-# Get bottom 5 unique states with lowest absolute correlations
+# Get bottom 3 states by pair (lowest correlations)
 bottom_states <- corr_by_state_plot %>%
+  group_by(type) %>%
   arrange(Correlation) %>%
   distinct(statecode, .keep_all = TRUE) %>%
-  slice_head(n = 5) %>%
+  slice_head(n = 3) %>%
+  ungroup() %>% 
   pull(statecode)
+
 
 # Combine them
 top_bottom_states <- c(top_states, bottom_states)
@@ -660,12 +676,31 @@ top_bottom_states <- c(top_states, bottom_states)
 
 # Filter data to include only top and bottom states
 corr_top_bottom_filtered <- corr_by_state_plot %>%
-  filter(statecode %in% top_bottom_states)
+  filter(statecode %in% top_bottom_states) %>% 
+  arrange(desc(Correlation))
+
+# Create statecode column from urbcodes (left pad first two digits of FIPS)
+urb_state_lookup <- urbcodes %>%
+  mutate(statecode = substr(str_pad(FIPS, 5, side = "left", pad = "0"), 1,2)) %>%
+  distinct(statecode, State)
+
+# Find overlap states (present in both top and bottom sets)
+overlap_states <- intersect(top_states, bottom_states)
 
 
-library(ggplot2)
+# Add flag to dataset
+corr_top_bottom_with_state <- corr_top_bottom_filtered %>%
+  left_join(urb_state_lookup, by = "statecode") %>%
+  mutate(
+    State = reorder(State, Correlation),
+    overlap = ifelse(statecode %in% overlap_states, "overlap", "normal")
+  )
 
-ggplot(corr_top_bottom_filtered, aes(x = statecode, y = Correlation, color = strength)) +
+# Make a vector of colors for x-axis labels
+#axis_colors <- ifelse(levels(corr_top_bottom_with_state$State) %in%                  #corr_top_bottom_with_state$State[corr_top_bottom_with_state$overlap == "overlap"],                      "purple", "black")
+
+# Plot
+ggplot(corr_top_bottom_with_state, aes(x = State, y = Correlation, color = strength)) +
   geom_point(size = 3, alpha = 0.8) +
   facet_grid(Var1 ~ Var2, drop = TRUE) +
   scale_color_manual(
@@ -674,17 +709,107 @@ ggplot(corr_top_bottom_filtered, aes(x = statecode, y = Correlation, color = str
   ) +
   theme_minimal() +
   labs(
-    title = "Correlations Between Disparity Domains in Top and Bottom States",
-    subtitle = "Based on average absolute correlation between Income, Race, and Tract disparity scores",
-    x = "State Code",
+    title = "States with highest and lowest correlations between disparity domains",
+    subtitle = "Based on average correlation between Income, Race, and Tract disparity scores",
+    x = "State",
     y = "Correlation of Disparity Domains"
   ) +
   theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text.x = element_text(angle = 45, hjust = 1),#, colour = axis_colors),
     strip.text = element_text(face = "bold")
   )
 
+
 ```
+
+## State-level correlations between disparity domains (for maps)
+
+```{r state level rho calcs }
+library(dplyr)
+library(purrr)
+
+# Updated function to safely calculate Spearman's rho
+get_spearman_rho <- function(x, y) {
+  if (length(na.omit(x)) < 2 || length(na.omit(y)) < 2) {
+    return(NA)  # Not enough data to compute correlation
+  }
+  cor.test(x, y, method = "spearman")$estimate
+}
+
+# Calculate Spearman's rho per state
+rho_by_state <- hist_data %>%
+  group_by(State) %>%
+  summarise(
+    race_inc_rho = get_spearman_rho(race_sd_bgv_wt, income_sd_bgv_wt),
+    tract_inc_rho = get_spearman_rho(tract_sd_bgv_wt, income_sd_bgv_wt),
+    tract_race_rho = get_spearman_rho(tract_sd_bgv_wt, race_sd_bgv_wt)
+  )
+
+```
+
+```{r state level map function }
+library(ggplot2)
+library(maps)
+
+# Load US states map
+states_map <- map_data("state")
+
+# Convert statecode to lowercase full names (you may need a lookup table here)
+# This assumes statecode is a standard two-letter code
+library(tibble)
+
+state_lookup <- tibble::tibble(
+  State = state.abb,
+  statename = tolower(state.name)
+)
+
+# Join rho data with full state names
+rho_by_state_map <- rho_by_state %>%
+  left_join(state_lookup, by = "State") %>%
+  filter(!is.na(statename)) # Remove states not matched
+
+```
+
+```{r maps of state level corr between disparities }
+# Merge with map data
+plot_data <- states_map %>%
+  left_join(rho_by_state_map, by = c("region" = "statename"))
+
+# Define a plotting function
+plot_rho_map <- function(data, fill_col, title) {
+  ggplot(data, aes(x = long, y = lat, group = group, fill = .data[[fill_col]])) +
+    geom_polygon(color = "white") +
+    coord_fixed(1.3) +
+    scale_fill_viridis_c(option = "plasma", na.value = "gray90") +
+    labs(title = title, fill = "Spearman's ρ") +
+    theme_minimal()
+}
+
+# Create each map
+map_race_inc <- plot_rho_map(plot_data, "race_inc_rho", "Race vs. Income Correlation by State")
+map_tract_inc <- plot_rho_map(plot_data, "tract_inc_rho", "Tract vs. Income Correlation by State")
+map_tract_race <- plot_rho_map(plot_data, "tract_race_rho", "Tract vs. Race Correlation by State")
+
+# Display the maps
+print(map_race_inc)
+print(map_tract_inc)
+print(map_tract_race)
+
+library(patchwork)
+
+combined_map <- map_race_inc + map_tract_inc + map_tract_race +
+  plot_layout(ncol = 1) +   # change ncol to 1 for vertical
+  plot_annotation(
+    title = "Correlations Between Disparity Domains",
+    subtitle = "Race–Income, Tract–Income, and Race–Tract comparisons"
+  )
+
+
+```
+
+
+
+
 
 ```{r}
 # Calculate standard deviation of correlation values per state
@@ -793,6 +918,76 @@ ggplot(rucc_miss, aes(x = PercentMissing, y = Description, fill = Domain)) +
   )
 ```
 
+```{r percent missing by state}
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(scales)
+
+# Step 1: Calculate percent missing per state
+state_miss <- all_urb %>%
+  group_by(statecode) %>%
+  summarise(
+    Race   = mean(is.na(race_sd_bgv_wt)),
+    Income = mean(is.na(income_sd_bgv_wt)),
+    Tract  = mean(is.na(tract_sd_bgv_wt)),
+    .groups = "drop"
+  )
+
+# Step 2: Identify top 5 and bottom 5 states by overall missingness
+state_miss <- state_miss %>%
+  mutate(TotalMissing = Race + Income + Tract)
+
+state_miss_diff <- all_urb %>%
+  group_by(statecode) %>%
+  summarise(
+    Race   = mean(is.na(race_sd_bgv_wt)),
+    Income = mean(is.na(income_sd_bgv_wt)),
+    Tract  = mean(is.na(tract_sd_bgv_wt)),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    max_diff = pmax(Race, Income, Tract) - pmin(Race, Income, Tract)
+  ) %>%
+  arrange(desc(max_diff))
+
+
+top_bottom_states <- state_miss_diff %>%
+  arrange(desc(max_diff)) %>%
+  slice_head(n = 5) %>%
+  bind_rows(state_miss %>% arrange(TotalMissing) %>% slice_head(n = 5))
+
+# Optional: Join state names if you have a lookup
+state_lookup <- urbcodes %>% 
+  mutate(statecode = substr(str_pad(FIPS, 5, side = "left", pad = "0"), 1, 2)) %>%
+  distinct(statecode, State)
+
+top_bottom_states <- top_bottom_states %>%
+  left_join(state_lookup, by = "statecode")
+
+# Step 3: Pivot longer for ggplot
+top_bottom_long <- top_bottom_states %>%
+  pivot_longer(cols = c(Race, Income, Tract),
+               names_to = "Domain",
+               values_to = "PercentMissing")
+
+# Step 4: Plot
+ggplot(top_bottom_long, aes(x = PercentMissing, y = reorder(State, PercentMissing), fill = Domain)) +
+  geom_col(position = "dodge") +
+  scale_x_continuous(labels = percent_format(accuracy = 1)) +
+  labs(
+    title = "Missing County-level Disparities by State",
+    x = "Percent Missing",
+    y = "",
+    fill = "Domain"
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    legend.position = "bottom",
+    axis.text.y = element_text(size = 9)
+  )
+
+```
 
 
 # Correlations in missingness 
@@ -931,7 +1126,7 @@ library(sf)
 # Merge data with county shapefile
 load("inputs/counties_shp.RData")
 
-map_data <- left_join(counties, all, by = c("statecode", "countycode"))
+map_data <- left_join(counties, all23, by = c("statecode", "countycode"))
 
 # Select columns that contain "sd_bgv_wt" in their name
 sd_bgv_wt_columns <- map_data %>% 
@@ -943,7 +1138,7 @@ sd_bgv_wt_columns <- map_data %>%
 
 # Set specific columns to NA if they are 0
 map_data <- map_data %>%
-  mutate(across(c(tract_cis_sd_bgv_wt, race_cis_sd_bgv_wt, income_cis_sd_bgv_wt), 
+  mutate(across(c(tract_sd_bgv_wt, race_sd_bgv_wt, income_sd_bgv_wt), 
                 ~if_else(. == 0, NA_real_, .)))
 
 
@@ -974,9 +1169,9 @@ The coasts (California and New England) appear to have high tract and income dis
 
 ```{r}
 # Plot each map
-plot_tract <- plot_map("tract_cis_sd_bgv_wt", "SD across Tracts", legend = FALSE)
-plot_income <- plot_map("income_cis_sd_bgv_wt", "SD across Income", legend = FALSE)
-plot_race_wlegend <- plot_map("race_cis_sd_bgv_wt", "SD across Race/Ethnicities")
+plot_tract <- plot_map("tract_sd_bgv_wt", "SD across Tracts", legend = FALSE)
+plot_income <- plot_map("income_sd_bgv_wt", "SD across Income", legend = FALSE)
+plot_race_wlegend <- plot_map("race_sd_bgv_wt", "SD across Race/Ethnicities")
 
 plot_tract
 plot_income
@@ -990,13 +1185,13 @@ plot_race_wlegend
 
 urbcodes = readxl::read_xlsx("inputs/Ruralurbancontinuumcodes2023.xlsx")
 urbcodes <- urbcodes %>% mutate(FIPS = as.numeric(FIPS))  # Ensure numeric for join
-all = all %>% mutate(fipscode = as.numeric(fipscode.x))
+all = all23 %>% mutate(fipscode = as.numeric(fipscode.x))
 all_urb <- left_join(all, urbcodes, by = c("fipscode" = "FIPS"))
 
 
 # Set specific columns to NA if they are 0
 hist_data <- all_urb %>%
-  mutate(across(c(tract_cis_sd_bgv_wt, race_cis_sd_bgv_wt, income_cis_sd_bgv_wt), 
+  mutate(across(c(tract_sd_bgv_wt, race_sd_bgv_wt, income_sd_bgv_wt), 
                 ~if_else(. == 0, NA_real_, .)))
 
 
@@ -1102,80 +1297,7 @@ tract_race
 
 ```
 
-## State-level rhos
 
-```{r state level rho calcs }
-library(dplyr)
-library(purrr)
-
-# Updated function to safely calculate Spearman's rho
-get_spearman_rho <- function(x, y) {
-  if (length(na.omit(x)) < 2 || length(na.omit(y)) < 2) {
-    return(NA)  # Not enough data to compute correlation
-  }
-  cor.test(x, y, method = "spearman")$estimate
-}
-
-# Calculate Spearman's rho per state
-rho_by_state <- hist_data %>%
-  group_by(State) %>%
-  summarise(
-    race_inc_rho = get_spearman_rho(race_cis_sd_bgv_wt, income_cis_sd_bgv_wt),
-    tract_inc_rho = get_spearman_rho(tract_cis_sd_bgv_wt, income_cis_sd_bgv_wt),
-    tract_race_rho = get_spearman_rho(tract_cis_sd_bgv_wt, race_cis_sd_bgv_wt)
-  )
-
-```
-
-```{r state level map function }
-library(ggplot2)
-library(maps)
-
-# Load US states map
-states_map <- map_data("state")
-
-# Convert statecode to lowercase full names (you may need a lookup table here)
-# This assumes statecode is a standard two-letter code
-library(tibble)
-
-state_lookup <- tibble::tibble(
-  State = state.abb,
-  statename = tolower(state.name)
-)
-
-# Join rho data with full state names
-rho_by_state_map <- rho_by_state %>%
-  left_join(state_lookup, by = "State") %>%
-  filter(!is.na(statename)) # Remove states not matched
-
-```
-
-```{r maps themselves }
-# Merge with map data
-plot_data <- states_map %>%
-  left_join(rho_by_state_map, by = c("region" = "statename"))
-
-# Define a plotting function
-plot_rho_map <- function(data, fill_col, title) {
-  ggplot(data, aes(x = long, y = lat, group = group, fill = .data[[fill_col]])) +
-    geom_polygon(color = "white") +
-    coord_fixed(1.3) +
-    scale_fill_viridis_c(option = "plasma", na.value = "gray90") +
-    labs(title = title, fill = "Spearman's ρ") +
-    theme_minimal()
-}
-
-# Create each map
-map_race_inc <- plot_rho_map(plot_data, "race_inc_rho", "Race vs. Income Correlation by State")
-map_tract_inc <- plot_rho_map(plot_data, "tract_inc_rho", "Tract vs. Income Correlation by State")
-map_tract_race <- plot_rho_map(plot_data, "tract_race_rho", "Tract vs. Race Correlation by State")
-
-# Display the maps
-print(map_race_inc)
-print(map_tract_inc)
-print(map_tract_race)
-
-```
 
 ## State-level SD
 
@@ -1184,9 +1306,9 @@ print(map_tract_race)
 median_by_state <- hist_data %>%
   group_by(State) %>%
   summarise(
-    median_tract = median(tract_cis_sd_bgv_wt, na.rm = TRUE),
-    median_race = median(race_cis_sd_bgv_wt, na.rm = TRUE),
-    median_income = median(income_cis_sd_bgv_wt, na.rm = TRUE),
+    median_tract = median(tract_sd_bgv_wt, na.rm = TRUE),
+    median_race = median(race_sd_bgv_wt, na.rm = TRUE),
+    median_income = median(income_sd_bgv_wt, na.rm = TRUE),
     .groups = "drop"
   )
 
@@ -1228,7 +1350,7 @@ plot_median_map <- function(data, fill_col, title, top_states) {
     labs(title = title, fill = "Median Value") +
     theme_minimal() +
     annotate("text", x = -125, y = 25, label = paste("Top States: ", paste(top_states, collapse = ", ")), 
-             size = 5, color = "black", hjust = 0, vjust = 0)
+             size = 3, color = "black", hjust = 0, vjust = 0)
 }
 
 # Get the top 5 states for each variable
@@ -1245,6 +1367,14 @@ map_median_income <- plot_median_map(plot_data, "median_income", "Median Income 
 print(map_median_tract)
 print(map_median_race)
 print(map_median_income)
+
+library(patchwork)
+combo_disparitymap = map_median_tract + map_median_race + map_median_income + 
+  plot_layout(ncol = 1) + 
+  plot_annotation(
+    title = "Median disparities by state", 
+    subtitle = "Tract, income, race")
+combo_disparitymap  
 
 ```
 
@@ -1272,22 +1402,52 @@ library(ggvenn)
 
 # Step 2: Create subsets for the Venn diagram based on missing values
 venn_data <- list(
-  race = hist_data %>% filter(is.na(race_cis_sd_bgv_wt)) %>% pull(fipscode),
-  tract = hist_data %>% filter(is.na(tract_cis_sd_bgv_wt)) %>% pull(fipscode),
-  income = hist_data %>% filter(is.na(income_cis_sd_bgv_wt)) %>% pull(fipscode)
+  race = hist_data %>% filter(is.na(race_sd_bgv_wt)) %>% pull(fipscode),
+  tract = hist_data %>% filter(is.na(tract_sd_bgv_wt)) %>% pull(fipscode),
+  income = hist_data %>% filter(is.na(income_sd_bgv_wt)) %>% pull(fipscode)
 )
 
 # Calculate total number of missing entries (only consider missing data)
 total_missing <- length(unique(c(venn_data$race, venn_data$tract, venn_data$income)))
+total_counties = length(unique(hist_data$fipscode.x))
 
+# Step 3: Compute all relevant sets
+race_set   <- unique(venn_data$race)
+tract_set  <- unique(venn_data$tract)
+income_set <- unique(venn_data$income)
 
+# Marginals
+pct_race   <- length(race_set)   / total_counties * 100
+pct_tract  <- length(tract_set)  / total_counties * 100
+pct_income <- length(income_set) / total_counties * 100
 
-# Create Venn diagram using ggvenn
-ggvenn(venn_data, 
-       show_percentage = TRUE, 
-       fill_color = c("lightblue", "lightgreen", "lightcoral"),
-       stroke_color = "black")
-      # title = "Venn Diagram of Missing Values for Race, Tract, and Income SD")
+# Pairwise overlaps
+pct_race_tract   <- length(intersect(race_set, tract_set)) / total_counties * 100
+pct_race_income  <- length(intersect(race_set, income_set)) / total_counties * 100
+pct_tract_income <- length(intersect(tract_set, income_set)) / total_counties * 100
+
+# Triple overlap
+pct_all_three <- length(Reduce(intersect, list(race_set, tract_set, income_set))) / total_counties * 100
+
+# Step 4: Create Venn diagram
+ggvenn(
+  venn_data,
+  show_percentage = FALSE,   # turn off built-in
+  fill_color = c("lightblue", "lightgreen", "lightcoral"),
+  stroke_color = "black"
+) +
+  labs(
+    title = "Missing Values by Domain",
+    subtitle = paste0(
+      "Race: ", round(pct_race, 1), "%, ",
+      "Tract: ", round(pct_tract, 1), "%, ",
+      "Income: ", round(pct_income, 1), "%\n",
+      "Race∩Tract: ", round(pct_race_tract, 1), "%, ",
+      "Race∩Income: ", round(pct_race_income, 1), "%, ",
+      "Tract∩Income: ", round(pct_tract_income, 1), "%\n",
+      "All three: ", round(pct_all_three, 1), "%"
+    )
+  )
 
 ```
 
