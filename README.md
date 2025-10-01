@@ -1,0 +1,7 @@
+Background: Centers for Disease Control and Prevention’s Public Health 3.0 emphasizes the need for granular, subcounty data and analysis of social determinants of health across diverse groups, including race and income, to enhance equity. Subcounty data are measured in different domains, the choice of which influences the understanding of within-county disparities. 
+
+Objective: To compare within-county disparity between groups in three domains (race/ethnicity, income, and geography) using homeownership data as a case example. 
+
+Methods: Within-county disparities by income (9 groups), race/ethnicity (8 groups), and census tracts (CT) were measured using the standard deviation of population weighted group means. Homeownership rates were extracted from the 2018-2022 American Community Survey. Disparity magnitudes and correlations between domains were explored, along with practical considerations like data coverage. 
+
+Results: Median homeownership rates of counties with non-missing data by income, CT, and race/ethnicity were 73.0%, 71.7%, and 71.4%, respectively. Within-county disparities were largest by income (11.9%), followed by race/ethnicity (9.5%) and CT (9.4%). Correlations between domains were strongest for CT and income (rho = 0.58, p <.001). Data coverage was best for income followed by CT and race/ethnicity in all counties (83%, 67%, and 62%, respectively) and in rural counties (79%, 58%, and 51%, respectively). 
