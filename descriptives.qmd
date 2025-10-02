@@ -213,7 +213,7 @@ ggplot(tract_level23, aes(x = as.factor(RUCC_2023), y = rawvalue)) +
 
 # box-whisker plot with y axis as disparity and x axis is domain 
 
-```{r}
+```{r some set up; actual plot is in next chunk }
 library(dplyr)
 library(ggplot2)
 
@@ -240,17 +240,7 @@ race_county <- race %>%
 # Step 4: Combine
 all_county <- bind_rows(income_county, tract_county, race_county)
 
-# Step 5: Boxplot
-ggplot(all_county, aes(x = domain, y = rawvalue, fill = domain)) +
-  geom_violin()+#outlier.alpha = 0.4) +
-  geom_boxplot(width = 0.15, outlier.shape = NA, fill = "white", alpha = 0.6) +
-  labs(
-    x = "Domain of Disparity",
-    y = "Magnitude of Disparity",
-    title = "County-Level Disparities (2023)"
-  ) +
-  theme_minimal() +
-  theme(legend.position = "none")
+
 
 ```
 ```{r raincloud plot }
@@ -286,6 +276,59 @@ ggplot(all_county, aes(x = domain, y = rawvalue, fill = domain, color = domain))
     y = "Magnitude of Disparity",
     title = "County-Level Disparities (2023)"
   ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+
+library(moments)
+stats <- all_county %>%
+  group_by(domain) %>%
+  summarise(
+    N = n(),
+    Median = median(rawvalue, na.rm = TRUE),
+    SD = sd(rawvalue, na.rm = TRUE),
+    Skewness = skewness(rawvalue, na.rm = TRUE),
+    Kurtosis = kurtosis(rawvalue, na.rm = TRUE),  # excess kurtosis if you want: kurtosis() - 3
+    .groups = "drop"
+  ) %>%
+  mutate(
+    axis_label = paste0(
+      domain, 
+      "\nN=", N, 
+      "\nMed=", round(Median, 2), 
+      "\nSD=", round(SD, 2), 
+      "\nSkew=", round(Skewness, 2),
+      "\nKurt=", round(Kurtosis, 2)
+    )
+  )
+
+# Build the plot
+ggplot(all_county, aes(x = domain, y = rawvalue, fill = domain, color = domain)) +
+  stat_halfeye(
+    adjust = 0.5, 
+    width = 0.6, 
+    .width = 0, 
+    alpha = 0.3, 
+    justification = -0.3, 
+    point_colour = NA
+  ) +
+  geom_boxplot(
+    width = 0.15, 
+    outlier.shape = NA, 
+    alpha = 0.6, 
+    position = position_nudge(x = -0.15)
+  ) +
+  geom_point(
+    alpha = 0.3, 
+    size = 1,  
+    position = position_jitter(width = 0.2, seed = 123), 
+    aes(x = as.numeric(domain) + 0.2)
+  ) +
+  labs(
+    x = "",
+    y = "Magnitude of Disparity",
+    title = "County-Level Disparities"
+  ) +
+  scale_x_discrete(labels = stats$axis_label) +   # use custom labels
   theme_minimal() +
   theme(legend.position = "none")
 
