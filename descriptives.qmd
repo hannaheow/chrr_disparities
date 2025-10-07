@@ -330,7 +330,12 @@ ggplot(all_county, aes(x = domain, y = rawvalue, fill = domain, color = domain))
   ) +
   scale_x_discrete(labels = stats$axis_label) +   # use custom labels
   theme_minimal() +
-  theme(legend.position = "none")
+  theme(
+    legend.position = "none",
+    axis.text = element_text(size = 14),      # axis tick labels
+    axis.title = element_text(size = 16),     # axis titles
+    plot.title = element_text(size = 18, face = "bold")  # plot title
+  )
 
 ```
 
@@ -533,7 +538,7 @@ ggplot(plot_data, aes(x = MedianDisparity, y = Description, fill = Measure)) +
   theme_minimal(base_size = 12) +
   theme(
     legend.position = "top",
-    axis.text.y = element_text(size = 9)
+    axis.text.y = element_text(size = 12)
   )
 
 ```
