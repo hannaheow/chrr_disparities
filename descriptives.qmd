@@ -932,16 +932,18 @@ Missingness in rawvalues (accounting for zero pop)
 ```{r}
 
 race_level23_nozero = race_level23 %>% filter(pop != 0)
+tract_level23_nozero = tract_level23 %>% filter(pop != 0)
+income_level23_nozero = income_level23 %>% filter(num_household != 0)
 
 # Percent missing – Individuals
-pm_indiv_race <- 1 - (race_level23 %>% filter(!is.na(rawvalue)) %>% summarize(sum(pop)) %>% pull()) / sum(race_level23$pop)
-pm_indiv_tract <- 1 - (tract_level23 %>% filter(!is.na(rawvalue)) %>% summarize(sum(pop)) %>% pull()) / sum(tract_level23$pop)
-pm_indiv_income <- 1 - (income_level23 %>% filter(!is.na(rawvalue)) %>% summarize(sum(num_household)) %>% pull()) / sum(income_level23$num_household)
+pm_indiv_race <- 1 - (race_level23_nozero %>% filter(!is.na(rawvalue)) %>% summarize(sum(pop)) %>% pull()) / sum(race_level23_nozero$pop)
+pm_indiv_tract <- 1 - (tract_level23_nozero %>% filter(!is.na(rawvalue)) %>% summarize(sum(pop)) %>% pull()) / sum(tract_level23_nozero$pop)
+pm_indiv_income <- 1 - (income_level23_nozero %>% filter(!is.na(rawvalue)) %>% summarize(sum(num_household)) %>% pull()) / sum(income_level23_nozero$num_household)
 
 # Percent missing – Groups
-pm_group_race <- 1 - sum(!is.na(race_level23$rawvalue)) / nrow(race_level23)
-pm_group_tract <- 1 - sum(!is.na(tract_level23$rawvalue)) / length(unique(tract_level23$GEOID))
-pm_group_income <- 1 - sum(!is.na(income_level23$rawvalue)) / nrow(income_level23)
+pm_group_race <- 1 - sum(!is.na(race_level23_nozero$rawvalue)) / nrow(race_level23_nozero)
+pm_group_tract <- 1 - sum(!is.na(tract_level23_nozero$rawvalue)) / length(unique(tract_level23_nozero$GEOID))
+pm_group_income <- 1 - sum(!is.na(income_level23_nozero$rawvalue)) / nrow(income_level23_nozero)
 
 # Create data frame
 missing_summary <- data.frame(
@@ -1503,19 +1505,19 @@ library(ggvenn)
 
 # Step 2: Create subsets for the Venn diagram based on missing values
 venn_data <- list(
-  race = hist_data %>% filter(is.na(race_sd_bgv_wt)) %>% pull(fipscode),
-  tract = hist_data %>% filter(is.na(tract_sd_bgv_wt)) %>% pull(fipscode),
-  income = hist_data %>% filter(is.na(income_sd_bgv_wt)) %>% pull(fipscode)
+  Race = hist_data %>% filter(is.na(race_sd_bgv_wt)) %>% pull(fipscode),
+  Tract = hist_data %>% filter(is.na(tract_sd_bgv_wt)) %>% pull(fipscode),
+  Income = hist_data %>% filter(is.na(income_sd_bgv_wt)) %>% pull(fipscode)
 )
 
 # Calculate total number of missing entries (only consider missing data)
-total_missing <- length(unique(c(venn_data$race, venn_data$tract, venn_data$income)))
+total_missing <- length(unique(c(venn_data$Race, venn_data$Tract, venn_data$Income)))
 total_counties = length(unique(hist_data$fipscode.x))
 
 # Step 3: Compute all relevant sets
-race_set   <- unique(venn_data$race)
-tract_set  <- unique(venn_data$tract)
-income_set <- unique(venn_data$income)
+race_set   <- unique(venn_data$Race)
+tract_set  <- unique(venn_data$Tract)
+income_set <- unique(venn_data$Income)
 
 # Marginals
 pct_race   <- length(race_set)   / total_counties * 100
