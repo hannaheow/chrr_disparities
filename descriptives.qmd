@@ -925,6 +925,59 @@ missing_summary %>%
 
 ```
 
+
+Missingness in rawvalues (accounting for zero pop) 
+
+
+```{r}
+
+race_level23_nozero = race_level23 %>% filter(pop != 0)
+
+# Percent missing – Individuals
+pm_indiv_race <- 1 - (race_level23 %>% filter(!is.na(rawvalue)) %>% summarize(sum(pop)) %>% pull()) / sum(race_level23$pop)
+pm_indiv_tract <- 1 - (tract_level23 %>% filter(!is.na(rawvalue)) %>% summarize(sum(pop)) %>% pull()) / sum(tract_level23$pop)
+pm_indiv_income <- 1 - (income_level23 %>% filter(!is.na(rawvalue)) %>% summarize(sum(num_household)) %>% pull()) / sum(income_level23$num_household)
+
+# Percent missing – Groups
+pm_group_race <- 1 - sum(!is.na(race_level23$rawvalue)) / nrow(race_level23)
+pm_group_tract <- 1 - sum(!is.na(tract_level23$rawvalue)) / length(unique(tract_level23$GEOID))
+pm_group_income <- 1 - sum(!is.na(income_level23$rawvalue)) / nrow(income_level23)
+
+# Create data frame
+missing_summary <- data.frame(
+  Domain = c("Race/Ethnicity", "Household Income Categories", "Census Tract"),
+  pminds = scales::percent(c(pm_indiv_race, pm_indiv_income, pm_indiv_tract), accuracy = 0.1),
+  pmgroups = scales::percent(c(pm_group_race, pm_group_income, pm_group_tract ), accuracy = 0.1)
+)
+
+# Create gt table
+missing_summary %>%
+  gt() %>%
+  tab_header(
+    title = "Summary of Missing Data by Domain",
+    subtitle = "Percent missing for individuals (from ACS) and groups (excluded due to unstable estimates)"
+  ) %>%
+  cols_label(
+    Domain = "Domain",
+    pminds = "Individuals (%)",
+    pmgroups = "Groups (%)"
+  ) %>%
+  cols_align(
+    align = "right",
+    columns = c(pminds, pmgroups)
+  )# %>%
+  #tab_source_note(
+  #  source_note = "Note: 'Individuals' refers to people or households with missing ACS data; 'Groups' refers 
+  #to categories excluded due to unstable homeownership rate estimates."
+  #)
+
+```
+
+
+
+
+
+
 # Missingness at the county level 
  
 ```{r}
@@ -1256,17 +1309,17 @@ plot_histograms_by_rucc <- function(rucc_group) {
 
  
   # Create histograms for each category
-  hist1 <- ggplot(filtered_data, aes(x = race_cis_sd_bgv_wt)) +
+  hist1 <- ggplot(filtered_data, aes(x = race_sd_bgv_wt)) +
     geom_histogram(bins = 30, fill = "#1f77b4", alpha = 0.7) +
     theme_minimal(base_size = 14) + 
     labs(x = "Race", y = "Count")
 
-  hist2 <- ggplot(filtered_data, aes(x = tract_cis_sd_bgv_wt)) +
+  hist2 <- ggplot(filtered_data, aes(x = tract_sd_bgv_wt)) +
     geom_histogram(bins = 30, fill = "#ff7f0e", alpha = 0.7) +
     theme_minimal(base_size = 14) +
     labs(x = "Tract", y = "Count")
 
-  hist3 <- ggplot(filtered_data, aes(x = income_cis_sd_bgv_wt)) +
+  hist3 <- ggplot(filtered_data, aes(x = income_sd_bgv_wt)) +
     geom_histogram(bins = 30, fill = "#2ca02c", alpha = 0.7) +
     theme_minimal(base_size = 14) +
     labs(x = "Income", y = "Count")
