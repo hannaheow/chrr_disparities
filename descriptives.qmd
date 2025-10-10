@@ -975,6 +975,23 @@ missing_summary %>%
 
 ```
 
+# Number of counties with only one tract, race, income  
+
+```{r}
+ntract = tract_level23 %>% group_by(statecode, countycode) %>% summarize(ntract = n_distinct(GEOID))
+
+notractdisp = ntract %>% filter(ntract <2) 
+
+
+nrace = race_level23 %>% group_by(statecode, countycode) %>% filter(pop!=0) %>% summarize(nrace = n_distinct(race))
+
+noracedisp = nrace %>% filter(nrace <2) 
+
+nincome = income_level23 %>% group_by(statecode, countycode) %>% filter(numerator!=0) %>% summarize(nincome = n_distinct(grp))
+
+noincomedisp = nincome %>% filter(nincome <2) 
+
+```
 
 
 
