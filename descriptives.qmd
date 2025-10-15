@@ -699,6 +699,20 @@ corr_by_state_plot <- correlations_by_state %>%
   ungroup() %>%
   distinct(statecode, pair, .keep_all = TRUE)
 
+
+# calculate differences in corr by state (to find states with largest diff across domains)
+cor_diff <- correlations_by_state %>%
+  # Keep only one row per unique combination of statecode and type (remove duplicates)
+  distinct(statecode, type, .keep_all = TRUE) %>%
+  # For each state, find min and max correlations, then compute the difference
+  group_by(statecode) %>%
+  summarize(
+    min_cor = min(Correlation, na.rm = TRUE),
+    max_cor = max(Correlation, na.rm = TRUE),
+    diff_cor = max_cor - min_cor
+  ) %>%
+  arrange(desc(diff_cor))
+
 # Get top 3 states by pair (highest correlations)
 top_states <- corr_by_state_plot %>%
   group_by(type) %>%
@@ -983,13 +997,40 @@ ntract = tract_level23 %>% group_by(statecode, countycode) %>% summarize(ntract 
 notractdisp = ntract %>% filter(ntract <2) 
 
 
-nrace = race_level23 %>% group_by(statecode, countycode) %>% filter(pop!=0) %>% summarize(nrace = n_distinct(race))
+nrace = race_level23 %>% group_by(statecode, countycode) %>% 
+  #filter(pop!=0) %>% 
+  summarize(nrace = n_distinct(race))
 
-noracedisp = nrace %>% filter(nrace <2) 
+nrace_nonzero <- race_level23 %>%
+  filter(numerator != 0) %>%
+  group_by(statecode, countycode) %>%
+  summarize(nrace_nonzero = n_distinct(race), .groups = "drop")
 
-nincome = income_level23 %>% group_by(statecode, countycode) %>% filter(numerator!=0) %>% summarize(nincome = n_distinct(grp))
+# Identify counties meeting either condition
+no_race_disp <- nrace %>%
+  left_join(nrace_nonzero, by = c("statecode", "countycode")) %>%
+  filter(nrace < 2 | nrace_nonzero < 2)
 
-noincomedisp = nincome %>% filter(nincome <2) 
+
+
+
+##########################################
+nincome = income_level23 %>% group_by(statecode, countycode) %>% 
+  #filter(numerator!=0) %>% 
+  summarize(nincome = n_distinct(grp))
+
+nincome_nonzero <- income_level23 %>%
+  filter(numerator != 0) %>%
+  group_by(statecode, countycode) %>%
+  summarize(nincome_nonzero = n_distinct(grp), .groups = "drop")
+
+# Identify counties meeting either condition
+no_income_disp <- nincome %>%
+  left_join(nincome_nonzero, by = c("statecode", "countycode")) %>%
+  filter(nincome < 2 | nincome_nonzero < 2)
+
+
+
 
 ```
 
